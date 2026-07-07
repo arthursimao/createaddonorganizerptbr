@@ -1,4 +1,5 @@
 Want to share / add banner art to the mod? join the [discord!](https://discord.gg/JEz2CkSaC)
+(if added to the mod, you will be in the credits!)
 
 Create: Addon Organizer
 =======

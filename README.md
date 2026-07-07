@@ -1,5 +1,5 @@
 
-Installation information
+im too lazy to change this so ill do it later
 =======
 
 This template repository can be directly cloned to get you started with a new

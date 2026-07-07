@@ -1,0 +1,88 @@
+{
+  "name": "Barebones",
+  "bannerColor": -14277082,
+  "sectionColors": [
+    "copycats:functional \u003d #FF262626",
+    "farmersdelight:farmersdelight \u003d #FF262626"
+  ],
+  "banners": [
+    "create:base \u003d res:createaddonorganizer:textures/banner/cogwork.png"
+  ],
+  "animatedBanners": [],
+  "tintedBox": true,
+  "boxColor": 1677721600,
+  "boxColors": [
+    "create:base \u003d #64000000",
+    "copycats:functional \u003d #64000000",
+    "farmersdelight:farmersdelight \u003d #64000000"
+  ],
+  "textColor": -1,
+  "textColors": [
+    "create:base \u003d #FFFFFFFF",
+    "copycats:functional \u003d #FFFFFFFF",
+    "farmersdelight:farmersdelight \u003d #FFFFFFFF"
+  ],
+  "twoTone": true,
+  "textSecondaryColor": -3355444,
+  "textSecondaryColors": [
+    "create:base \u003d #FFCCCCCC",
+    "copycats:functional \u003d #FFCCCCCC",
+    "farmersdelight:farmersdelight \u003d #FFCCCCCC"
+  ],
+  "sectionOrder": [
+    "bellsandwhistles:bells_and_whistles_tab",
+    "bits_n_bobs:bnb_based",
+    "create_aquatic_ambitions:tab",
+    "createbigcannons:base",
+    "createendertransmission:base",
+    "create_sa:create_stuff_additions_tab",
+    "create_train_parts:base",
+    "create_connected:main",
+    "copycats:main",
+    "copycats:functional",
+    "create_dragons_plus:base",
+    "create_enchantment_industry:base",
+    "extra_gauges:main_tab",
+    "create_more_automation:create_more_automation",
+    "create_power_loader:main",
+    "pipeorgans:pipe_organs",
+    "dndesires:base_tab",
+    "powergrid:main",
+    "simulated:main_tab",
+    "brewinandchewin:brewinandchewin",
+    "crabbersdelight:farmersdelight",
+    "farmersknives:farmersknives",
+    "farmerspizzeria:farmers_pizzeria",
+    "fungidelight:fungidelight_tab",
+    "mynethersdelight:main",
+    "ramadandelight:ramadandelight_tab",
+    "ramadandelight:ramadandelight_deco_tab",
+    "veggiesdelight:veggiesdelight_tab",
+    "createdeco:props_tab",
+    "createdeco:bricks_tab",
+    "bits_n_bobs:bnb_palettes"
+  ],
+  "sectionNames": [],
+  "forceInclude": [
+    "brewinandchewin:brewinandchewin",
+    "crabbersdelight:farmersdelight",
+    "farmersknives:farmersknives",
+    "farmerspizzeria:farmers_pizzeria",
+    "fungidelight:fungidelight_tab",
+    "ramadandelight:ramadandelight_tab",
+    "ramadandelight:ramadandelight_deco_tab",
+    "veggiesdelight:veggiesdelight_tab",
+    "mynethersdelight:main",
+    "copycats:functional"
+  ],
+  "forceExclude": [
+    "create:base",
+    "simulated:main_tab",
+    "create:palettes"
+  ],
+  "routes": [],
+  "extraMainSections": [],
+  "highlightColors": [
+    "farmersdelight:farmersdelight \u003d #FFD9B810"
+  ]
+}

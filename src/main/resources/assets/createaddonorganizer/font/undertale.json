@@ -1,0 +1,12 @@
+{
+  "providers": [
+    {
+      "type": "ttf",
+      "file": "createaddonorganizer:determination_sans.ttf",
+      "size": 11.0,
+      "oversample": 4.0,
+      "shift": [0.0, 0.0],
+      "skip": ""
+    }
+  ]
+}

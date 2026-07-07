@@ -1,0 +1,13 @@
+{
+  "required": false,
+  "minVersion": "0.8.5",
+  "package": "com.sockywocky.createaddonorganizer.mixin.simulated",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "SimResourceManagerAccessor",
+    "SimulatedCreativeTabRenderMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

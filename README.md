@@ -1,25 +1,33 @@
 
-im too lazy to change this so ill do it later
+Create: Addon Organizer
 =======
 
-This template repository can be directly cloned to get you started with a new
-mod. Simply create a new repository cloned from this one, by following the
-instructions provided by [GitHub](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template).
+A NeoForge 1.21.1 mod that folds every Create addon's creative tab into
+organized sections under the main "Create" tab, cutting down on the tab
+clutter that comes with running several Create addons at once.
 
-Once you have your clone, simply open the repository in the IDE of your choice. The usual recommendation for an IDE is either IntelliJ IDEA or Eclipse.
+Works with  any other mod aswell!
 
-If at any point you are missing libraries in your IDE, or you've run into problems you can
-run `gradlew --refresh-dependencies` to refresh the local cache. `gradlew clean` to reset everything 
-{this does not affect your code} and then start the process again.
+Showcase
+--------
 
-Mapping Names:
-============
-By default, the MDK is configured to use the official mapping names from Mojang for methods and fields 
-in the Minecraft codebase. These names are covered by a specific license. All modders should be aware of this
-license. For the latest license text, refer to the mapping file itself, or the reference copy here:
-https://github.com/NeoForged/NeoForm/blob/main/Mojang.md
+**Section Index** (sidebar) — addon items are grouped into paginated sections nested
+inside the "Create" tab, instead of each addon spawning its own tab in the
+creative menu.
 
-Additional Resources: 
-==========
-Community Documentation: https://docs.neoforged.net/  
-NeoForged Discord: https://discord.neoforged.net/
+![Section index showing Create items grouped into pages](docs/media/section-index.gif)
+
+**Custom Section Colors** — each section's banner icon can be recolored
+individually, making it easy to tell sections apart at a glance.
+
+![Picking a custom color for a section banner](docs/media/section-colors-1.gif)
+
+![Applying the selected color to a section](docs/media/section-colors-2.gif)
+
+Links
+-----
+
+- [Issue Tracker](https://github.com/SockyWocky7/createaddonorganizer/issues) — found a bug or have a feature request? Report it here.
+- [Discord](https://discord.gg/JEz2CkSaC) — join the community for support, update notifications, or if you want to share banner art!
+- ☕ [Ko-fi](https://ko-fi.com/sockywocky7#payment-widget) — support development.
+

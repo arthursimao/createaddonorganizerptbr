@@ -3,6 +3,8 @@ package com.sockywocky.createaddonorganizer.client;
 import java.io.IOException;
 import java.util.List;
 
+import org.lwjgl.glfw.GLFW;
+
 import com.sockywocky.createaddonorganizer.client.Presets.PresetData;
 import com.sockywocky.createaddonorganizer.client.Presets.PresetRef;
 import com.sockywocky.createaddonorganizer.createaddonorganizer;
@@ -11,6 +13,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ContainerObjectSelectionList;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.screens.ConfirmScreen;
@@ -20,6 +23,10 @@ import net.minecraft.network.chat.Component;
 public class PresetsScreen extends Screen {
     private final Screen parent;
     private PresetList list;
+    private String renamingRef;
+    private EditBox renameBox;
+    private RenameIconButton renameConfirm;
+    private RenameIconButton renameCancel;
 
     public PresetsScreen(Screen parent) {
         super(Component.translatable("createaddonorganizer.colors.presets.title"));
@@ -59,6 +66,78 @@ public class PresetsScreen extends Screen {
 
         g.drawCenteredString(this.font, Component.translatable("createaddonorganizer.colors.presets.description"),
                 this.width / 2, 34, 0xAAAAAAAA);
+    }
+
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (renamingRef != null) {
+            if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
+                confirmRename();
+                return true;
+            }
+            if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+                cancelRename();
+                return true;
+            }
+            if (renameBox.keyPressed(keyCode, scanCode, modifiers) || renameBox.canConsumeInput()) {
+                return true;
+            }
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean charTyped(char codePoint, int modifiers) {
+        if (renameBox != null && renameBox.charTyped(codePoint, modifiers)) {
+            return true;
+        }
+        return super.charTyped(codePoint, modifiers);
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (renamingRef != null) {
+            if (renameConfirm.mouseClicked(mouseX, mouseY, button)
+                    || renameCancel.mouseClicked(mouseX, mouseY, button)
+                    || renameBox.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+            cancelRename();
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    private void startRename(PresetRef ref) {
+        renamingRef = ref.ref();
+        renameBox = new EditBox(this.font, 0, 0, 100, 20, Component.empty());
+        renameBox.setMaxLength(64);
+        renameBox.setValue(ref.name());
+        renameBox.setHighlightPos(0);
+        renameBox.setFocused(true);
+        renameConfirm = new RenameIconButton(true, Component.translatable("createaddonorganizer.colors.ok"),
+                b -> confirmRename());
+        renameCancel = new RenameIconButton(false, Component.translatable("createaddonorganizer.colors.cancel"),
+                b -> cancelRename());
+    }
+
+    private void confirmRename() {
+        if (renamingRef == null) {
+            return;
+        }
+        String ref = renamingRef;
+        String name = renameBox.getValue().trim();
+        if (!name.isEmpty()) {
+            Presets.rename(ref, name);
+            list.updateName(ref, name);
+        }
+        cancelRename();
+    }
+
+    private void cancelRename() {
+        renamingRef = null;
+        renameBox = null;
+        renameConfirm = null;
+        renameCancel = null;
     }
 
     private void importPreset() {
@@ -107,13 +186,21 @@ public class PresetsScreen extends Screen {
             addEntry(new Row(ref));
         }
 
+        void updateName(String ref, String newName) {
+            for (Row row : children()) {
+                if (row.ref.ref().equals(ref)) {
+                    row.ref = new PresetRef(ref, newName);
+                }
+            }
+        }
+
         @Override
         public int getRowWidth() {
             return 320;
         }
 
         private class Row extends ContainerObjectSelectionList.Entry<Row> {
-            private final PresetRef ref;
+            private PresetRef ref;
             private final Button edit;
 
             Row(PresetRef ref) {
@@ -138,6 +225,10 @@ public class PresetsScreen extends Screen {
                 if (super.mouseClicked(mouseX, mouseY, button)) {
                     return true;
                 }
+                if (button == 0 && Screen.hasControlDown() && !ref.builtin()) {
+                    PresetsScreen.this.startRename(ref);
+                    return true;
+                }
                 if (button == 0) {
                     applyWithConfirm(ref);
                     return true;
@@ -155,9 +246,22 @@ public class PresetsScreen extends Screen {
                 edit.setY(top + (rowHeight - 20) / 2);
                 int labelX = edit.getX() - 10 - font.width(tag);
 
-                g.drawString(font, ref.name(), left + 4, textY, 0xFFFFFFFF);
-                if (!tag.isEmpty()) {
-                    g.drawString(font, tag, labelX, textY, 0xFFAAAAAA);
+                if (ref.ref().equals(renamingRef)) {
+                    renameCancel.setX(edit.getX() - 22);
+                    renameCancel.setY(edit.getY());
+                    renameConfirm.setX(renameCancel.getX() - 22);
+                    renameConfirm.setY(edit.getY());
+                    renameBox.setX(left);
+                    renameBox.setY(edit.getY());
+                    renameBox.setWidth(renameConfirm.getX() - 4 - left);
+                    renameBox.render(g, mouseX, mouseY, partialTick);
+                    renameConfirm.render(g, mouseX, mouseY, partialTick);
+                    renameCancel.render(g, mouseX, mouseY, partialTick);
+                } else {
+                    g.drawString(font, ref.name(), left + 4, textY, 0xFFFFFFFF);
+                    if (!tag.isEmpty()) {
+                        g.drawString(font, tag, labelX, textY, 0xFFAAAAAA);
+                    }
                 }
                 edit.render(g, mouseX, mouseY, partialTick);
             }

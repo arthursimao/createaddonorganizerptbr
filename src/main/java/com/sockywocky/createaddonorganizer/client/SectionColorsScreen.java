@@ -20,15 +20,18 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ContainerObjectSelectionList;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import net.minecraft.world.item.CreativeModeTab;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 
@@ -89,6 +92,11 @@ public class SectionColorsScreen extends Screen {
     private Runnable lastUndo;
     private int konamiProgress;
     private long konamiTriggeredMillis;
+    private ResourceLocation renamingId;
+    private EditBox renameBox;
+    private RenameIconButton renameConfirm;
+    private RenameIconButton renameCancel;
+    private Component hoverPreviewTooltip;
 
     public SectionColorsScreen(Screen parent, ModContainer container) {
         super(Component.translatable("createaddonorganizer.colors.title"));
@@ -157,7 +165,11 @@ public class SectionColorsScreen extends Screen {
                 fadingButtons.get(i).setAlpha(Math.max(animProgress(BUTTON_DELAYS[i], FADE_MS), 0.04f));
             }
         }
+        hoverPreviewTooltip = null;
         super.render(g, mouseX, mouseY, partialTick);
+        if (hoverPreviewTooltip != null) {
+            g.renderTooltip(this.font, hoverPreviewTooltip, mouseX, mouseY);
+        }
 
         float slide = animProgress(0, TITLE_SLIDE_MS);
         int titleY = Math.round(-44 + (16 - -44) * slide);
@@ -218,6 +230,19 @@ public class SectionColorsScreen extends Screen {
 
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (renamingId != null) {
+            if (keyCode == GLFW.GLFW_KEY_ENTER || keyCode == GLFW.GLFW_KEY_KP_ENTER) {
+                confirmRename();
+                return true;
+            }
+            if (keyCode == GLFW.GLFW_KEY_ESCAPE) {
+                cancelRename();
+                return true;
+            }
+            if (renameBox.keyPressed(keyCode, scanCode, modifiers) || renameBox.canConsumeInput()) {
+                return true;
+            }
+        }
         if (noSections && KONAMI_LINE.equals(emptyStateText) && konamiTriggeredMillis == 0) {
             if (keyCode == KONAMI_SEQUENCE[konamiProgress]) {
                 konamiProgress++;
@@ -235,6 +260,71 @@ public class SectionColorsScreen extends Screen {
             return true;
         }
         return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+
+    @Override
+    public boolean charTyped(char codePoint, int modifiers) {
+        if (renameBox != null && renameBox.charTyped(codePoint, modifiers)) {
+            return true;
+        }
+        return super.charTyped(codePoint, modifiers);
+    }
+
+    @Override
+    public boolean mouseClicked(double mouseX, double mouseY, int button) {
+        if (renamingId != null) {
+            if (renameConfirm.mouseClicked(mouseX, mouseY, button)
+                    || renameCancel.mouseClicked(mouseX, mouseY, button)
+                    || renameBox.mouseClicked(mouseX, mouseY, button)) {
+                return true;
+            }
+            cancelRename();
+        }
+        return super.mouseClicked(mouseX, mouseY, button);
+    }
+
+    private void startRename(SectionCatalog.Entry entry) {
+        renamingId = entry.id();
+        renameBox = new EditBox(this.font, 0, 0, 100, 20, Component.empty());
+        renameBox.setMaxLength(64);
+        renameBox.setValue(entry.name().getString());
+        renameBox.setHighlightPos(0);
+        renameBox.setFocused(true);
+        renameBox.setTooltip(Tooltip.create(Component.translatable("createaddonorganizer.rename.hint")));
+        renameConfirm = new RenameIconButton(true, Component.translatable("createaddonorganizer.colors.ok"),
+                b -> confirmRename());
+        renameCancel = new RenameIconButton(false, Component.translatable("createaddonorganizer.colors.cancel"),
+                b -> cancelRename());
+    }
+
+    private void confirmRename() {
+        if (renamingId == null) {
+            return;
+        }
+        ResourceLocation id = renamingId;
+        String name = renameBox.getValue().trim();
+        Component title;
+        if (name.isEmpty()) {
+            Config.clearSectionName(id);
+            CreativeModeTab tab = BuiltInRegistries.CREATIVE_MODE_TAB.get(id);
+            title = tab != null ? tab.getDisplayName() : Component.literal(id.toString());
+        } else {
+            Config.setSectionName(id, name);
+            title = Component.literal(name);
+        }
+        LiveColors.applyTitle(id, title);
+        list.updateName(id, title);
+        if (orderDirty) {
+            pendingOrder = list.currentEntries();
+        }
+        cancelRename();
+    }
+
+    private void cancelRename() {
+        renamingId = null;
+        renameBox = null;
+        renameConfirm = null;
+        renameCancel = null;
     }
 
     private void renderTitleGlint(GuiGraphics g, String title, float scale, int titleY, float slide) {
@@ -474,8 +564,12 @@ public class SectionColorsScreen extends Screen {
 
             g.pose().pushPose();
             g.pose().translate(0, 0, 100);
-            g.fillGradient(x1, top, x2, top + EDGE_FADE_PX, 0x90000000, 0x00000000);
-            g.fillGradient(x1, bottom - EDGE_FADE_PX, x2, bottom, 0x00000000, 0x90000000);
+            if (getScrollAmount() > 0) {
+                g.fillGradient(x1, top, x2, top + EDGE_FADE_PX, 0x90000000, 0x00000000);
+            }
+            if (getScrollAmount() < getMaxScroll()) {
+                g.fillGradient(x1, bottom - EDGE_FADE_PX, x2, bottom, 0x00000000, 0x90000000);
+            }
             g.pose().popPose();
         }
 
@@ -502,12 +596,37 @@ public class SectionColorsScreen extends Screen {
             return index + 1 >= all.size() || all.get(index + 1).data.parent();
         }
 
+        private int minNonNativeInsertIndex(ResourceLocation parent) {
+            List<Row> all = children();
+            int start = 0;
+            for (int i = 0; i < all.size(); i++) {
+                if (all.get(i).data.parent() && all.get(i).data.id().equals(parent)) {
+                    start = i + 1;
+                    break;
+                }
+            }
+            int i = start;
+            while (i < all.size() && !all.get(i).data.parent() && all.get(i).data.readOnly()) {
+                i++;
+            }
+            return i;
+        }
+
         private int hitTestIndex(double mouseX, double mouseY) {
             Row hit = getEntryAtPosition(mouseX, mouseY);
             if (hit != null) {
                 return children().indexOf(hit);
             }
             return mouseY < getY() + rowHeight ? 0 : children().size() - 1;
+        }
+
+        void updateName(ResourceLocation id, Component title) {
+            for (Row row : children()) {
+                if (row.data.id().equals(id)) {
+                    row.data = new SectionCatalog.Entry(id, title, row.data.parent(), row.data.readOnly(),
+                            row.data.nativeTextColor(), row.data.nativeSecondaryTextColor());
+                }
+            }
         }
 
         List<SectionCatalog.Entry> currentEntries() {
@@ -547,14 +666,14 @@ public class SectionColorsScreen extends Screen {
         }
 
         private class Row extends ContainerObjectSelectionList.Entry<Row> {
-            private final SectionCatalog.Entry data;
+            private SectionCatalog.Entry data;
             private final Button edit;
 
             Row(SectionCatalog.Entry entry) {
                 this.data = entry;
                 this.edit = entry.readOnly() ? null
                         : Button.builder(Component.translatable("createaddonorganizer.colors.edit"),
-                                        b -> minecraft.setScreen(new ColorPickerScreen(SectionColorsScreen.this, entry.id(), entry.name(), entry.parent())))
+                                        b -> minecraft.setScreen(new ColorPickerScreen(SectionColorsScreen.this, data.id(), data.name(), data.parent())))
                                 .size(44, 20).build();
             }
 
@@ -652,7 +771,7 @@ public class SectionColorsScreen extends Screen {
                     return true;
                 }
                 if (button == 0 && Screen.hasControlDown()) {
-                    minecraft.setScreen(new RenameSectionScreen(SectionColorsScreen.this, data.id(), data.name().getString()));
+                    SectionColorsScreen.this.startRename(data);
                     return true;
                 }
                 if (button == 0 && !data.parent()) {
@@ -675,6 +794,7 @@ public class SectionColorsScreen extends Screen {
                 if (ColorList.this.children().get(hovered).data.parent()) {
                     insertPos++;
                 }
+                insertPos = Math.max(insertPos, ColorList.this.minNonNativeInsertIndex(ColorList.this.dragTargetParent));
                 dragTargetIndex = insertPos;
                 return true;
             }
@@ -722,6 +842,18 @@ public class SectionColorsScreen extends Screen {
                     int mouseX, int mouseY, boolean hovered, float partialTick) {
 
                 float alpha = animationDone() ? 1f : rowAlpha(index);
+
+                int listTop = ColorList.this.getY();
+                int listBottom = ColorList.this.getBottom();
+                float edgeFade = 1f;
+                if (ColorList.this.getScrollAmount() > 0 && top < listTop + EDGE_FADE_PX) {
+                    edgeFade = Mth.clamp((top + rowHeight - listTop) / (float) EDGE_FADE_PX, 0f, 1f);
+                }
+                if (ColorList.this.getScrollAmount() < ColorList.this.getMaxScroll() && top + rowHeight > listBottom - EDGE_FADE_PX) {
+                    edgeFade = Math.min(edgeFade, Mth.clamp((listBottom - top) / (float) EDGE_FADE_PX, 0f, 1f));
+                }
+                alpha *= edgeFade;
+
                 if (alpha <= 0.03f) {
                     return;
                 }
@@ -774,7 +906,11 @@ public class SectionColorsScreen extends Screen {
                 }
 
                 int previewW = 48;
-                String rightLabel;
+                String previewTooltip;
+                int previewX1;
+                int previewY1;
+                int previewX2;
+                int previewY2;
                 String bannerRef = Config.bannerRefFor(data.id());
                 if (bannerRef != null) {
                     int th = BannerTextures.HEIGHT;
@@ -786,11 +922,14 @@ public class SectionColorsScreen extends Screen {
                         int texHeight = BannerAnimation.preview(tex, false, 1)
                                 .map(BannerAnimation.AnimInfo::frameCount).orElse(1) * BannerTextures.HEIGHT;
                         g.setColor(1f, 1f, 1f, alpha);
-                        g.blit(tex, contentLeft, ty, previewW, th, 0.0F, 0.0F,
-                                BannerTextures.WIDTH, BannerTextures.HEIGHT, BannerTextures.WIDTH, texHeight);
+                        BannerTextures.blitCropped(g, tex, contentLeft, ty, previewW, th, texHeight);
                         g.setColor(1f, 1f, 1f, 1f);
                     }
-                    rightLabel = Component.translatable("createaddonorganizer.banner.mode.image").getString();
+                    previewTooltip = Component.translatable("createaddonorganizer.banner.mode.image").getString();
+                    previewX1 = contentLeft - 1;
+                    previewY1 = ty - 1;
+                    previewX2 = contentLeft + previewW + 1;
+                    previewY2 = ty + th + 1;
                 } else {
                     int swatch = 16;
                     int sy = top + (rowHeight - swatch) / 2;
@@ -798,25 +937,47 @@ public class SectionColorsScreen extends Screen {
                     int argb = 0xFF000000 | (Config.bannerColorFor(data.id()) & 0x00FFFFFF);
                     g.fill(sx, sy, sx + swatch, sy + swatch, mulAlpha(0xFF000000, alpha));
                     g.fill(sx + 1, sy + 1, sx + swatch - 1, sy + swatch - 1, mulAlpha(argb, alpha));
-                    rightLabel = Config.formatHex(Config.bannerColorFor(data.id()));
+                    previewTooltip = Config.formatHex(Config.bannerColorFor(data.id()));
+                    previewX1 = sx;
+                    previewY1 = sy;
+                    previewX2 = sx + swatch;
+                    previewY2 = sy + swatch;
+                }
+
+                if (mouseX >= previewX1 && mouseX < previewX2 && mouseY >= previewY1 && mouseY < previewY2) {
+                    SectionColorsScreen.this.hoverPreviewTooltip = Component.literal(previewTooltip);
                 }
 
                 edit.setX(left + rowWidth - edit.getWidth());
                 edit.setY(top + (rowHeight - 20) / 2);
-                int labelX = edit.getX() - 10 - font.width(rightLabel);
-
                 int nameX = contentLeft + previewW + 8;
-                int nameMaxWidth = labelX - 4 - nameX;
-                Component name = truncatedName(data, nameMaxWidth);
-                int primary = mulAlpha(Config.textColorFor(data.id()), alpha);
-                Integer secondary = Config.textSecondaryColorFor(data.id());
-                if (secondary != null) {
-                    TwoToneText.draw(g, font, name, nameX, textY, primary, mulAlpha(secondary, alpha));
+
+                if (data.id().equals(renamingId)) {
+                    float widgetAlpha = Math.max(alpha, 0.04f);
+                    renameCancel.setX(edit.getX() - 22);
+                    renameCancel.setY(edit.getY());
+                    renameConfirm.setX(renameCancel.getX() - 22);
+                    renameConfirm.setY(edit.getY());
+                    renameBox.setX(nameX - 4);
+                    renameBox.setY(edit.getY());
+                    renameBox.setWidth(renameConfirm.getX() - 4 - nameX + 4);
+                    renameBox.render(g, mouseX, mouseY, partialTick);
+                    renameConfirm.setAlpha(widgetAlpha);
+                    renameCancel.setAlpha(widgetAlpha);
+                    renameConfirm.render(g, mouseX, mouseY, partialTick);
+                    renameCancel.render(g, mouseX, mouseY, partialTick);
                 } else {
-                    g.drawString(font, name, nameX, textY, primary);
+                    int nameMaxWidth = edit.getX() - 10 - nameX;
+                    Component name = truncatedName(data, nameMaxWidth);
+                    int primary = mulAlpha(Config.textColorFor(data.id()), alpha);
+                    Integer secondary = Config.textSecondaryColorFor(data.id());
+                    if (secondary != null) {
+                        TwoToneText.draw(g, font, name, nameX, textY, primary, mulAlpha(secondary, alpha));
+                    } else {
+                        g.drawString(font, name, nameX, textY, primary);
+                    }
                 }
 
-                g.drawString(font, rightLabel, labelX, textY, mulAlpha(0xFFAAAAAA, alpha));
                 edit.setAlpha(Math.max(alpha, 0.04f));
                 edit.render(g, mouseX, mouseY, partialTick);
 
@@ -858,8 +1019,8 @@ public class SectionColorsScreen extends Screen {
         @Override
         public void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
             super.renderWidget(g, mouseX, mouseY, partialTick);
-            int ix = getX() + (getWidth() - ICON_SIZE) / 2;
-            int iy = getY() + (getHeight() - ICON_SIZE) / 2;
+            int ix = getX() + (getWidth() - ICON_SIZE) / 2 + 1;
+            int iy = getY() + (getHeight() - ICON_SIZE) / 2 + 1;
 
             RenderSystem.enableBlend();
             g.setColor(0f, 0f, 0f, this.alpha);

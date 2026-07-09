@@ -16,7 +16,7 @@ public record CaoSection(ResourceLocation id, Component title, int bannerColor, 
         int textColor, ConglomerateOfItems items) implements Section {
 
     private static final int CONTENT_W = 160;
-    private static final int CONTENT_H = 16;
+    static final int CONTENT_H = 16;
     private static final int ROW_H = 18;
     private static final int BEVEL_DARK = 0xFF373737;
     private static final int BEVEL_WHITE = 0xFFFFFFFF;
@@ -61,7 +61,8 @@ public record CaoSection(ResourceLocation id, Component title, int bannerColor, 
                 v = frame * BannerTextures.HEIGHT;
                 texHeight = anim.get().frameCount() * BannerTextures.HEIGHT;
             }
-            g.blit(texture, x1, contentTop, 0f, v, CONTENT_W, CONTENT_H, BannerTextures.WIDTH, texHeight);
+            g.blit(texture, x1, contentTop, CONTENT_W, CONTENT_H, 0f, v,
+                    BannerTextures.WIDTH, BannerTextures.HEIGHT, BannerTextures.WIDTH, texHeight);
         } else {
             g.fill(x1, contentTop, x2, contentBottom, bannerColor);
         }

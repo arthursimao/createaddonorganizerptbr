@@ -30,7 +30,7 @@ You can change
 
 And if you dont want a color for the tab section, you can upload your own image! it has to be 160x17, and the mod also has full vanilla texture animation support (just like create aero!)
 
- ![Image and animation (Credit to arthur for the banner)](https://cdn.modrinth.com/data/cached_images/b23850da491efa1f92edde8dd2c55378f97a4a15.gif)
+![Image and animation (Credit to arthur for the banner)](https://cdn.modrinth.com/data/cached_images/b23850da491efa1f92edde8dd2c55378f97a4a15.gif)
 
 If you have a lot of addons, there is a built in sidebar that allows you to quickly jump to them!
 

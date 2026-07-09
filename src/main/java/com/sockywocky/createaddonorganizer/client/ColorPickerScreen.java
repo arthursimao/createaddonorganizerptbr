@@ -21,6 +21,7 @@ import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Checkbox;
 import net.minecraft.client.gui.components.ContainerObjectSelectionList;
 import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
@@ -62,6 +63,7 @@ public class ColorPickerScreen extends Screen {
     private int bannerFrameTicks = 4;
 
     private int previewY;
+    private int panelTop;
 
     public ColorPickerScreen(Screen parent, ResourceLocation id, Component sectionName, boolean isMainTab) {
         super(Component.translatable("createaddonorganizer.colors.pick"));
@@ -104,23 +106,43 @@ public class ColorPickerScreen extends Screen {
     @Override
     protected void init() {
         int buttonsY = this.height - 28;
+        this.panelTop = 34;
 
         if (highlightOnly) {
             initHighlightPanel();
             addRenderableWidget(Button.builder(Component.translatable("createaddonorganizer.colors.ok"), b -> confirm())
                     .bounds(this.width / 2 - 102, buttonsY, 100, 20).build());
             addRenderableWidget(Button.builder(Component.translatable("createaddonorganizer.colors.cancel"), b -> onClose())
-                    .bounds(this.width / 2 + 2, buttonsY, 100, 20).build());
+                    .bounds(this.width / 2 + 2, buttonsY, 78, 20).build());
+            addRenderableWidget(Button.builder(Component.literal("?"), b -> {})
+                    .bounds(this.width / 2 + 84, buttonsY, 18, 20)
+                    .tooltip(Tooltip.create(Component.translatable("createaddonorganizer.colors.simulatedUneditable")))
+                    .build());
             return;
         }
 
-        this.previewY = this.height - 78;
+        boolean previewTop = Config.bannerEditorPreviewTop();
+        this.previewY = previewTop ? 32 : this.height - 52;
+        this.panelTop = previewTop ? 58 : 34;
 
         switch (target) {
             case BANNER -> initBannerPanel();
             case BOX -> initBoxPanel();
             case TEXT -> initTextPanel();
             case HIGHLIGHT -> initHighlightPanel();
+        }
+
+        if (DevMode.isUnlocked()) {
+            Button screenshotButton = addRenderableWidget(Button.builder(
+                            Component.translatable("createaddonorganizer.banner.screenshot"),
+                            b -> captureScreenshot())
+                    .bounds(6, 6, 100, 20).build());
+            screenshotButton.active = hasBanner();
+
+            addRenderableWidget(Button.builder(
+                            Component.translatable("createaddonorganizer.banner.screenshot.openFolder"),
+                            b -> BannerScreenshot.openFolder())
+                    .bounds(6, 28, 130, 20).build());
         }
 
         if (isMainTab) {
@@ -140,7 +162,7 @@ public class ColorPickerScreen extends Screen {
     private void initHighlightPanel() {
         int x = this.width / 2 - 100;
         addRenderableWidget(Checkbox.builder(Component.translatable("createaddonorganizer.colors.highlight.enabled"), this.font)
-                .pos(x, 34)
+                .pos(x, panelTop)
                 .selected(hasHighlight)
                 .onValueChange((cb, checked) -> {
                     hasHighlight = checked;
@@ -148,7 +170,7 @@ public class ColorPickerScreen extends Screen {
                 })
                 .build());
         if (hasHighlight) {
-            addColorControls(x, 64, highlightHsva);
+            addColorControls(x, panelTop + 30, highlightHsva);
         }
     }
 
@@ -157,25 +179,27 @@ public class ColorPickerScreen extends Screen {
         addRenderableWidget(Button.builder(modeLabel(), b -> {
             mode = (mode == Mode.COLOR) ? Mode.IMAGE : Mode.COLOR;
             rebuildWidgets();
-        }).bounds(x, 34, 150, 20).build());
-        addRenderableWidget(Button.builder(Component.translatable("createaddonorganizer.colors.reset"), b -> resetBanner())
-                .bounds(x + 154, 34, 46, 20).build());
+        }).bounds(x, panelTop, 150, 20).build());
+        addRenderableWidget(Button.builder(Component.translatable("createaddonorganizer.colors.resetShort"), b -> resetBanner())
+                .bounds(x + 154, panelTop, 46, 20)
+                .tooltip(Tooltip.create(Component.translatable("createaddonorganizer.colors.reset")))
+                .build());
 
         if (mode == Mode.COLOR) {
-            addColorControls(x, 60, bannerHsva);
+            addColorControls(x, panelTop + 26, bannerHsva);
         } else {
             boolean isUpload = selectedRef != null && selectedRef.startsWith("file:");
             addRenderableWidget(Button.builder(Component.translatable("createaddonorganizer.banner.upload"),
-                    b -> upload()).bounds(x, 60, isUpload ? 130 : 200, 20).build());
+                    b -> upload()).bounds(x, panelTop + 26, isUpload ? 130 : 200, 20).build());
             if (isUpload) {
                 addRenderableWidget(Button.builder(Component.translatable("createaddonorganizer.banner.delete"),
-                        b -> confirmDelete()).bounds(x + 134, 60, 66, 20).build());
+                        b -> confirmDelete()).bounds(x + 134, panelTop + 26, 66, 20).build());
             }
 
             boolean canAnimate = selectedTexture != null && BannerAnimation.isAnimatable(selectedTexture);
             if (canAnimate) {
                 addRenderableWidget(Checkbox.builder(Component.translatable("createaddonorganizer.banner.animated"), this.font)
-                        .pos(x, 84)
+                        .pos(x, panelTop + 51)
                         .selected(bannerAnimated)
                         .onValueChange((cb, checked) -> {
                             bannerAnimated = checked;
@@ -183,7 +207,7 @@ public class ColorPickerScreen extends Screen {
                         })
                         .build());
                 if (bannerAnimated) {
-                    addRenderableWidget(new ChannelSlider(x, 108, 200, 20,
+                    addRenderableWidget(new ChannelSlider(x + 90, panelTop + 50, 110, 20,
                             Component.translatable("createaddonorganizer.banner.speed"),
                             (bannerFrameTicks - 1) / 9.0,
                             v -> bannerFrameTicks = 1 + (int) Math.round(v * 9),
@@ -193,7 +217,7 @@ public class ColorPickerScreen extends Screen {
 
             List<String> pool = BannerPools.poolFor(id);
             boolean hasPool = !pool.isEmpty();
-            int checkboxY = canAnimate ? 132 : 86;
+            int checkboxY = canAnimate ? panelTop + 74 : panelTop + 50;
             int listTop = checkboxY;
             if (hasPool) {
                 addRenderableWidget(Checkbox.builder(Component.translatable("createaddonorganizer.banner.showAll"), this.font)
@@ -207,7 +231,7 @@ public class ColorPickerScreen extends Screen {
                 listTop = checkboxY + 24;
             }
 
-            int listBottom = previewY - 22;
+            int listBottom = Config.bannerEditorPreviewTop() ? this.height - 34 : previewY - 8;
             GalleryList gallery = new GalleryList(this.minecraft, this.width, listBottom - listTop, listTop, BannerTextures.HEIGHT + 6);
             boolean restrict = hasPool && !DevMode.isUnlocked() && !Config.showAllBanners();
             List<String> refs;
@@ -230,7 +254,7 @@ public class ColorPickerScreen extends Screen {
 
     private void initBoxPanel() {
         int x = this.width / 2 - 100;
-        int y = addColorControls(x, 34, boxHsva);
+        int y = addColorControls(x, panelTop, boxHsva);
         addRenderableWidget(new ChannelSlider(x, y, 200, 20, Component.translatable("createaddonorganizer.colors.alpha"),
                 boxHsva.a, v -> boxHsva.a = (float) v));
         addRenderableWidget(Button.builder(Component.translatable("createaddonorganizer.colors.reset"), b -> {
@@ -250,19 +274,19 @@ public class ColorPickerScreen extends Screen {
 
     private void initTextPanel() {
         int x = this.width / 2 - 100;
-        int panelTop = 34;
+        int top = panelTop;
 
         if (twoTone) {
             addRenderableWidget(Button.builder(textTargetLabel(), b -> {
                 textEditTarget = (textEditTarget == TextTarget.PRIMARY) ? TextTarget.SECONDARY : TextTarget.PRIMARY;
                 rebuildWidgets();
-            }).bounds(x, panelTop, 200, 20).build());
-            panelTop += 26;
+            }).bounds(x, top, 200, 20).build());
+            top += 26;
         }
 
         boolean editingSecondary = twoTone && textEditTarget == TextTarget.SECONDARY;
         Hsva active = editingSecondary ? text2Hsva : textHsva;
-        int y = addColorControls(x, panelTop, active);
+        int y = addColorControls(x, top, active);
 
         addRenderableWidget(Button.builder(Component.translatable("createaddonorganizer.colors.reset"), b -> {
             Hsva def = Hsva.fromArgb(editingSecondary
@@ -497,8 +521,8 @@ public class ColorPickerScreen extends Screen {
         int by = previewY;
         boolean hasBanner = mode == Mode.COLOR || selectedTexture != null;
         if (hasBanner) {
-            int textX = bx + 4;
-            int textY = by + (BannerTextures.HEIGHT - 1 - 9) / 2 + 1;
+            int textX = bx + 5;
+            int textY = by + 4;
             int w = this.font.width(this.sectionName);
             if (within(mx, my, textX, textY, textX + w, textY + 9)) {
                 return EditTarget.TEXT;
@@ -507,7 +531,7 @@ public class ColorPickerScreen extends Screen {
                 return EditTarget.BOX;
             }
         }
-        if (within(mx, my, bx, by, bx + BannerTextures.WIDTH, by + BannerTextures.HEIGHT - 1)) {
+        if (within(mx, my, bx, by, bx + BannerTextures.WIDTH, by + CaoSection.CONTENT_H)) {
             return EditTarget.BANNER;
         }
         return null;
@@ -528,48 +552,19 @@ public class ColorPickerScreen extends Screen {
 
         int bx = this.width / 2 - BannerTextures.WIDTH / 2;
         int by = previewY;
-        g.fill(bx - 6, by - 6, bx + BannerTextures.WIDTH + 6, by + BannerTextures.HEIGHT + 6, 0xD0202020);
+        g.fill(bx - 2, by - 2, bx + BannerTextures.WIDTH + 2, by + CaoSection.CONTENT_H + 2, 0xD0202020);
 
-        boolean hasBanner = mode == Mode.COLOR || selectedTexture != null;
-        if (mode == Mode.COLOR) {
-            g.fill(bx, by, bx + BannerTextures.WIDTH, by + BannerTextures.HEIGHT - 1, bannerHsva.toArgb());
-        } else if (selectedTexture != null) {
-            float v = 0.0F;
-            int texHeight = BannerTextures.HEIGHT;
-            var anim = BannerAnimation.preview(selectedTexture, bannerAnimated, bannerFrameTicks);
-            if (anim.isPresent()) {
-                boolean hovered = BannerAnimation.isHovering(bx, by, BannerTextures.WIDTH, BannerTextures.HEIGHT - 1, mouseX, mouseY);
-                int frame = BannerAnimation.currentFrame(selectedTexture, anim.get(), hovered);
-                v = frame * BannerTextures.HEIGHT;
-                texHeight = anim.get().frameCount() * BannerTextures.HEIGHT;
-            }
-
-            g.blit(selectedTexture, bx, by, 0.0F, v,
-                    BannerTextures.WIDTH, BannerTextures.HEIGHT - 1, BannerTextures.WIDTH, texHeight);
-        } else {
-            g.drawCenteredString(this.font, Component.translatable("createaddonorganizer.banner.none"),
-                    this.width / 2, by + (BannerTextures.HEIGHT - 8) / 2, 0xFF888888);
-        }
-
-        g.drawCenteredString(this.font, Component.translatable("createaddonorganizer.colors.clickHint"),
-                this.width / 2, by - 18, 0xFFAAAAAA);
+        boolean hasBanner = hasBanner();
+        drawBannerContent(g, bx, by, mouseX, mouseY, false);
 
         EditTarget hovered = hitTest(mouseX, mouseY);
 
         boolean pulsing = !Config.editorHintSeen();
 
         if (hasBanner) {
-            int textX = bx + 4;
-            int textY = by + (BannerTextures.HEIGHT - 1 - 9) / 2 + 1;
+            int textX = bx + 5;
+            int textY = by + 4;
             int w = this.font.width(this.sectionName);
-            if (Config.tintedTextBox()) {
-                g.fill(textX - 4, textY - 3, textX + w + 3, textY + 9 + 2, boxHsva.toArgb());
-            }
-            if (twoTone) {
-                TwoToneText.draw(g, this.font, this.sectionName, textX, textY, textHsva.toArgb(), text2Hsva.toArgb());
-            } else {
-                g.drawString(this.font, this.sectionName, textX, textY, textHsva.toArgb(), true);
-            }
             if (pulsing) {
                 outline(g, textX - 4, textY - 3, textX + w + 3, textY + 9 + 2, pulseColor(0.12f));
                 outline(g, textX, textY, textX + w, textY + 9, pulseColor(0.24f));
@@ -581,14 +576,10 @@ public class ColorPickerScreen extends Screen {
             }
         }
         if (pulsing) {
-            outline(g, bx, by, bx + BannerTextures.WIDTH, by + BannerTextures.HEIGHT - 1, pulseColor(0f));
+            outline(g, bx - 2, by - 2, bx + BannerTextures.WIDTH + 2, by + CaoSection.CONTENT_H + 2, pulseColor(0f));
         }
         if (hovered == EditTarget.BANNER) {
-            outline(g, bx, by, bx + BannerTextures.WIDTH, by + BannerTextures.HEIGHT - 1);
-        }
-
-        if (mode == Mode.COLOR) {
-            g.drawCenteredString(this.font, Config.formatHex(bannerHsva.toArgb()), this.width / 2, by + BannerTextures.HEIGHT + 10, 0xFFAAAAAA);
+            outline(g, bx - 2, by - 2, bx + BannerTextures.WIDTH + 2, by + CaoSection.CONTENT_H + 2);
         }
     }
 
@@ -620,6 +611,53 @@ public class ColorPickerScreen extends Screen {
     @Override
     public void onClose() {
         this.minecraft.setScreen(parent);
+    }
+
+    private boolean hasBanner() {
+        return mode == Mode.COLOR || selectedTexture != null;
+    }
+
+    private void captureScreenshot() {
+        BannerScreenshot.capture(BannerTextures.WIDTH, BannerTextures.HEIGHT, sectionName.getString(),
+                g -> drawBannerContent(g, 0, 0, -1, -1, true));
+    }
+
+    private void drawBannerContent(GuiGraphics g, int bx, int by, int mouseX, int mouseY, boolean staticFrame) {
+        int renderHeight = staticFrame ? BannerTextures.HEIGHT : CaoSection.CONTENT_H;
+        if (mode == Mode.COLOR) {
+            g.fill(bx, by, bx + BannerTextures.WIDTH, by + renderHeight, bannerHsva.toArgb());
+        } else if (selectedTexture != null) {
+            float v = 0.0F;
+            int texHeight = BannerTextures.HEIGHT;
+            var anim = BannerAnimation.preview(selectedTexture, bannerAnimated, bannerFrameTicks);
+            if (anim.isPresent()) {
+                boolean hovered = !staticFrame
+                        && BannerAnimation.isHovering(bx, by, BannerTextures.WIDTH, CaoSection.CONTENT_H, mouseX, mouseY);
+                int frame = staticFrame ? 0 : BannerAnimation.currentFrame(selectedTexture, anim.get(), hovered);
+                v = frame * BannerTextures.HEIGHT;
+                texHeight = anim.get().frameCount() * BannerTextures.HEIGHT;
+            }
+
+            g.blit(selectedTexture, bx, by, BannerTextures.WIDTH, renderHeight, 0.0F, v,
+                    BannerTextures.WIDTH, BannerTextures.HEIGHT, BannerTextures.WIDTH, texHeight);
+        } else {
+            g.drawCenteredString(this.font, Component.translatable("createaddonorganizer.banner.none"),
+                    bx + BannerTextures.WIDTH / 2, by + (renderHeight - 8) / 2, 0xFF888888);
+        }
+
+        if (hasBanner()) {
+            int textX = bx + 5;
+            int textY = by + 4;
+            int w = this.font.width(this.sectionName);
+            if (Config.tintedTextBox()) {
+                g.fill(textX - 4, textY - 3, textX + w + 3, textY + 9 + 2, boxHsva.toArgb());
+            }
+            if (twoTone) {
+                TwoToneText.draw(g, this.font, this.sectionName, textX, textY, textHsva.toArgb(), text2Hsva.toArgb());
+            } else {
+                g.drawString(this.font, this.sectionName, textX, textY, textHsva.toArgb(), true);
+            }
+        }
     }
 
     private static final class Hsva {
@@ -806,8 +844,11 @@ public class ColorPickerScreen extends Screen {
                 int bx = left + (rowWidth - BannerTextures.WIDTH) / 2;
                 int by = top + (rowHeight - BannerTextures.HEIGHT) / 2;
                 boolean selected = ref.equals(selectedRef);
-                int border = selected ? 0xFFFFFFFF : (hovered ? 0xFF808080 : 0xFF000000);
-                g.fill(bx - 1, by - 1, bx + BannerTextures.WIDTH + 1, by + BannerTextures.HEIGHT + 1, border);
+                if (selected) {
+                    outline(g, bx - 1, by - 1, bx + BannerTextures.WIDTH + 1, by + BannerTextures.HEIGHT + 1, 0xFFFFFFFF);
+                } else if (hovered) {
+                    outline(g, bx - 1, by - 1, bx + BannerTextures.WIDTH + 1, by + BannerTextures.HEIGHT + 1, 0x80FFFFFF);
+                }
                 if (texture != null) {
 
                     int texHeight = BannerAnimation.preview(texture, false, 1)

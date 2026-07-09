@@ -158,8 +158,7 @@ public class BannerAssignmentScreen extends Screen {
                     if (tex != null) {
                         int texHeight = BannerAnimation.preview(tex, false, 1)
                                 .map(BannerAnimation.AnimInfo::frameCount).orElse(1) * BannerTextures.HEIGHT;
-                        g.blit(tex, contentLeft, ty, previewW, th, 0.0F, 0.0F,
-                                BannerTextures.WIDTH, BannerTextures.HEIGHT, BannerTextures.WIDTH, texHeight);
+                        BannerTextures.blitCropped(g, tex, contentLeft, ty, previewW, th, texHeight);
                     }
                     rightLabel = Component.translatable("createaddonorganizer.bannerAssign.count", pool.size()).getString();
                 } else {

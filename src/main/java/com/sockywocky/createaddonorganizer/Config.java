@@ -190,6 +190,12 @@ public class Config {
                     "(by clicking any part of the preview). Turn off to show the pulsing hint again.")
             .define("editorHintSeen", false);
 
+    public static final ModConfigSpec.BooleanValue BANNER_EDITOR_PREVIEW_TOP = BUILDER
+            .comment("Where the clickable banner preview sits in the banner editor:",
+                    "true - directly under the title, with the edit controls below it.",
+                    "false - at the bottom of the screen, just above the OK/Cancel buttons.")
+            .define("bannerEditorPreviewTop", false);
+
     static final ModConfigSpec SPEC = BUILDER.build();
 
     public static void resetAllToDefault() {
@@ -564,6 +570,10 @@ public class Config {
     public static void setEditorHintSeen(boolean value) {
         EDITOR_HINT_SEEN.set(value);
         SPEC.save();
+    }
+
+    public static boolean bannerEditorPreviewTop() {
+        return BANNER_EDITOR_PREVIEW_TOP.get();
     }
 
     public static Integer textSecondaryColorFor(ResourceLocation id) {

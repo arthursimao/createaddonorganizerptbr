@@ -208,6 +208,27 @@ public final class Presets {
         writeFile(PRESETS_DIR.resolve(ref.substring(5)), data);
     }
 
+    public static void rename(String ref, String newName) {
+        if (ref == null || !ref.startsWith("file:")) {
+            return;
+        }
+        PresetData data = load(ref);
+        if (data == null) {
+            return;
+        }
+        PresetData renamed = new PresetData(newName, data.bannerColor(), data.sectionColors(), data.banners(),
+                data.animatedBanners(), data.tintedBox(), data.boxColor(), data.boxColors(),
+                data.textColor(), data.textColors(), data.twoTone(), data.textSecondaryColor(),
+                data.textSecondaryColors(), data.sectionOrder(), data.sectionNames(),
+                data.forceInclude(), data.forceExclude(), data.routes(), data.extraMainSections(),
+                data.highlightColors(), data.showAllBanners(), data.extraBannerPool());
+        try {
+            overwrite(ref, renamed);
+        } catch (IOException e) {
+            createaddonorganizer.LOGGER.warn("[CAO] failed to rename preset {}", ref, e);
+        }
+    }
+
     public static final class DevWriteException extends Exception {
         public DevWriteException(String message) {
             super(message);

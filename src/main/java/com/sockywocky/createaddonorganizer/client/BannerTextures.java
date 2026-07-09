@@ -29,6 +29,12 @@ public final class BannerTextures {
     public static final int WIDTH = 160;
     public static final int HEIGHT = 17;
 
+    public static void blitCropped(net.minecraft.client.gui.GuiGraphics g, ResourceLocation tex,
+            int x, int y, int w, int h, int textureTotalHeight) {
+        int u = Math.max(0, (WIDTH - w) / 2);
+        g.blit(tex, x, y, w, h, u, 0.0F, w, h, WIDTH, textureTotalHeight);
+    }
+
     private static final Path BANNERS_DIR = FMLPaths.CONFIGDIR.get().resolve("createaddonorganizer/banners");
 
     private static final Map<String, ResourceLocation> FILE_REGISTERED = new HashMap<>();

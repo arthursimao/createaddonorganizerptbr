@@ -1,8 +1,5 @@
 {
   "create:base": [
-    "res:createaddonorganizer:textures/banner/cogwork_brown.png"
-  ],
-  "aeroworks:main": [
-    "res:createaddonorganizer:textures/banner/cogwork_blue.png"
+    "res:createaddonorganizer:textures/banner/Create1.png"
   ]
 }

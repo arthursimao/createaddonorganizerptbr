@@ -15,7 +15,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.Resource;
 
 public final class BannerAnimation {
-    private static final int DEFAULT_AUTO_FRAME_TICKS = 4;
+    private static final int DEFAULT_AUTO_FRAME_TICKS = 2;
 
     private static final Map<ResourceLocation, Optional<AnimInfo>> CACHE = new HashMap<>();
     private static final Map<ResourceLocation, Integer> FRAME_COUNT_CACHE = new HashMap<>();

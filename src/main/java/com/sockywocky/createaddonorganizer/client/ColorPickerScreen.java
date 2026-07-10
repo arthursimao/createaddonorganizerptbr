@@ -60,7 +60,7 @@ public class ColorPickerScreen extends Screen {
     private ResourceLocation selectedTexture;
     private String selectedRef;
     private boolean bannerAnimated;
-    private int bannerFrameTicks = 4;
+    private int bannerFrameTicks = 2;
 
     private int previewY;
     private int panelTop;
@@ -100,7 +100,7 @@ public class ColorPickerScreen extends Screen {
     private void syncAnimationFields() {
         Integer declared = selectedTexture != null ? Config.animatedFrameTicks(selectedTexture) : null;
         this.bannerAnimated = selectedTexture != null && BannerAnimation.isAnimatable(selectedTexture);
-        this.bannerFrameTicks = declared != null ? declared : 4;
+        this.bannerFrameTicks = declared != null ? declared : 2;
     }
 
     @Override

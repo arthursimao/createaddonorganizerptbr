@@ -543,7 +543,14 @@ public class SectionColorsScreen extends Screen {
         private int dragFromIndex;
         private int dragTargetIndex;
         private ResourceLocation dragTargetParent;
+        private int dragGrabOffsetY;
+        private boolean dragActive;
+        private boolean renderingGhost;
+        private double dragStartMouseY;
 
+        private static final long SLIDE_MS = 130;
+        private static final int GHOST_BG = 0xB0101016;
+        private static final int GHOST_BORDER = 0x60FFFFFF;
         private static final int EDGE_FADE_PX = 24;
         private static final int SUB_INDENT = 14;
         private static final int SUB_LINE_X = 6;
@@ -571,6 +578,21 @@ public class SectionColorsScreen extends Screen {
                 g.fillGradient(x1, bottom - EDGE_FADE_PX, x2, bottom, 0x00000000, 0x90000000);
             }
             g.pose().popPose();
+
+            if (dragRow != null && dragActive) {
+                int left = getRowLeft();
+                int w = getRowWidth();
+                int gTop = ghostTop(mouseY);
+                int entryH = rowHeight - 4;
+                g.pose().pushPose();
+                g.pose().translate(0, 0, 200);
+                g.fill(left - 3, gTop - 3, left + w + 3, gTop + entryH + 3, GHOST_BG);
+                g.renderOutline(left - 3, gTop - 3, w + 6, entryH + 6, GHOST_BORDER);
+                renderingGhost = true;
+                dragRow.render(g, dragFromIndex, gTop, left, w, entryH, -1, -1, false, partialTick);
+                renderingGhost = false;
+                g.pose().popPose();
+            }
         }
 
         void add(SectionCatalog.Entry entry) {
@@ -612,12 +634,46 @@ public class SectionColorsScreen extends Screen {
             return i;
         }
 
-        private int hitTestIndex(double mouseX, double mouseY) {
-            Row hit = getEntryAtPosition(mouseX, mouseY);
-            if (hit != null) {
-                return children().indexOf(hit);
+        private void retarget(double mouseY) {
+            List<Row> all = children();
+            int slot = Math.round((ghostTop(mouseY) - getRowTop(0)) / (float) rowHeight);
+            slot = Mth.clamp(slot, 0, all.size() - 1);
+            int insertPos;
+            if (all.get(slot).data.parent() || slot > dragFromIndex) {
+                insertPos = slot + 1;
+            } else {
+                insertPos = slot;
             }
-            return mouseY < getY() + rowHeight ? 0 : children().size() - 1;
+            dragTargetParent = parentIdAt(insertPos - 1);
+            insertPos = Math.max(insertPos, minNonNativeInsertIndex(dragTargetParent));
+            dragTargetIndex = insertPos;
+            updateSlideTargets();
+        }
+
+        private void updateSlideTargets() {
+            List<Row> all = children();
+            for (int i = 0; i < all.size(); i++) {
+                int target = 0;
+                if (dragTargetIndex > dragFromIndex && i > dragFromIndex && i < dragTargetIndex) {
+                    target = -rowHeight;
+                } else if (dragTargetIndex <= dragFromIndex && i >= dragTargetIndex && i < dragFromIndex) {
+                    target = rowHeight;
+                }
+                all.get(i).slideTo(target);
+            }
+        }
+
+        private int ghostTop(double mouseY) {
+            return Mth.clamp((int) mouseY - dragGrabOffsetY, getY(), getY() + getHeight() - rowHeight);
+        }
+
+        @Override
+        public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
+            boolean handled = super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
+            if (dragRow != null) {
+                retarget(mouseY);
+            }
+            return handled;
         }
 
         void updateName(ResourceLocation id, Component title) {
@@ -668,6 +724,30 @@ public class SectionColorsScreen extends Screen {
         private class Row extends ContainerObjectSelectionList.Entry<Row> {
             private SectionCatalog.Entry data;
             private final Button edit;
+            private float slideFrom;
+            private int slideTarget;
+            private long slideStart;
+
+            private float slideOffset() {
+                float t = Mth.clamp((System.currentTimeMillis() - slideStart) / (float) SLIDE_MS, 0f, 1f);
+                float inv = 1f - t;
+                return Mth.lerp(1f - inv * inv * inv, slideFrom, slideTarget);
+            }
+
+            private void slideTo(int target) {
+                if (target == slideTarget) {
+                    return;
+                }
+                slideFrom = slideOffset();
+                slideTarget = target;
+                slideStart = System.currentTimeMillis();
+            }
+
+            private void settleFrom(float from) {
+                slideFrom = from;
+                slideTarget = 0;
+                slideStart = System.currentTimeMillis();
+            }
 
             Row(SectionCatalog.Entry entry) {
                 this.data = entry;
@@ -778,6 +858,10 @@ public class SectionColorsScreen extends Screen {
                     dragRow = this;
                     dragFromIndex = dragTargetIndex = ColorList.this.children().indexOf(this);
                     ColorList.this.dragTargetParent = ColorList.this.parentIdAt(dragFromIndex);
+                    ColorList.this.dragGrabOffsetY = (int) (mouseY - ColorList.this.getRowTop(dragFromIndex));
+                    ColorList.this.dragStartMouseY = mouseY;
+                    ColorList.this.dragActive = false;
+                    ColorList.this.updateSlideTargets();
                     return true;
                 }
                 return false;
@@ -788,14 +872,10 @@ public class SectionColorsScreen extends Screen {
                 if (dragRow != this) {
                     return super.mouseDragged(mouseX, mouseY, button, dragX, dragY);
                 }
-                int hovered = hitTestIndex(mouseX, mouseY);
-                ColorList.this.dragTargetParent = ColorList.this.parentIdAt(hovered);
-                int insertPos = hovered;
-                if (ColorList.this.children().get(hovered).data.parent()) {
-                    insertPos++;
+                if (!ColorList.this.dragActive && Math.abs(mouseY - ColorList.this.dragStartMouseY) > 4) {
+                    ColorList.this.dragActive = true;
                 }
-                insertPos = Math.max(insertPos, ColorList.this.minNonNativeInsertIndex(ColorList.this.dragTargetParent));
-                dragTargetIndex = insertPos;
+                ColorList.this.retarget(mouseY);
                 return true;
             }
 
@@ -803,6 +883,16 @@ public class SectionColorsScreen extends Screen {
             public boolean mouseReleased(double mouseX, double mouseY, int button) {
                 if (dragRow != this) {
                     return super.mouseReleased(mouseX, mouseY, button);
+                }
+                List<Row> all = ColorList.this.children();
+                Map<Row, Float> shownTops = new LinkedHashMap<>();
+                if (ColorList.this.dragActive) {
+                    for (int i = 0; i < all.size(); i++) {
+                        Row r = all.get(i);
+                        shownTops.put(r, r == dragRow
+                                ? (float) ColorList.this.ghostTop(mouseY)
+                                : ColorList.this.getRowTop(i) + r.slideOffset());
+                    }
                 }
                 if (dragTargetIndex != dragFromIndex) {
                     ResourceLocation originParent = ColorList.this.parentIdAt(dragFromIndex);
@@ -819,7 +909,14 @@ public class SectionColorsScreen extends Screen {
                         SectionColorsScreen.this.markOrderDirty();
                     }
                 }
+                if (ColorList.this.dragActive) {
+                    for (int i = 0; i < all.size(); i++) {
+                        Row r = all.get(i);
+                        r.settleFrom(shownTops.get(r) - ColorList.this.getRowTop(i));
+                    }
+                }
                 dragRow = null;
+                ColorList.this.dragActive = false;
                 return true;
             }
 
@@ -841,18 +938,27 @@ public class SectionColorsScreen extends Screen {
             public void render(GuiGraphics g, int index, int top, int left, int rowWidth, int rowHeight,
                     int mouseX, int mouseY, boolean hovered, float partialTick) {
 
+                if (dragRow == this && ColorList.this.dragActive && !ColorList.this.renderingGhost) {
+                    return;
+                }
+                if (!ColorList.this.renderingGhost) {
+                    top += Math.round(slideOffset());
+                }
+
                 float alpha = animationDone() ? 1f : rowAlpha(index);
 
-                int listTop = ColorList.this.getY();
-                int listBottom = ColorList.this.getBottom();
-                float edgeFade = 1f;
-                if (ColorList.this.getScrollAmount() > 0 && top < listTop + EDGE_FADE_PX) {
-                    edgeFade = Mth.clamp((top + rowHeight - listTop) / (float) EDGE_FADE_PX, 0f, 1f);
+                if (!ColorList.this.renderingGhost) {
+                    int listTop = ColorList.this.getY();
+                    int listBottom = ColorList.this.getBottom();
+                    float edgeFade = 1f;
+                    if (ColorList.this.getScrollAmount() > 0 && top < listTop + EDGE_FADE_PX) {
+                        edgeFade = Mth.clamp((top + rowHeight - listTop) / (float) EDGE_FADE_PX, 0f, 1f);
+                    }
+                    if (ColorList.this.getScrollAmount() < ColorList.this.getMaxScroll() && top + rowHeight > listBottom - EDGE_FADE_PX) {
+                        edgeFade = Math.min(edgeFade, Mth.clamp((listBottom - top) / (float) EDGE_FADE_PX, 0f, 1f));
+                    }
+                    alpha *= edgeFade;
                 }
-                if (ColorList.this.getScrollAmount() < ColorList.this.getMaxScroll() && top + rowHeight > listBottom - EDGE_FADE_PX) {
-                    edgeFade = Math.min(edgeFade, Mth.clamp((listBottom - top) / (float) EDGE_FADE_PX, 0f, 1f));
-                }
-                alpha *= edgeFade;
 
                 if (alpha <= 0.03f) {
                     return;
@@ -866,7 +972,7 @@ public class SectionColorsScreen extends Screen {
                     if (index != 0) {
                         g.fill(left, top, left + rowWidth, top + 1, mulAlpha(divider, alpha));
                     }
-                } else {
+                } else if (!ColorList.this.renderingGhost) {
                     ResourceLocation groupParent = ColorList.this.parentIdAt(index);
                     Integer highlight = groupParent != null ? Config.highlightColorFor(groupParent) : null;
                     int lineColor = highlight != null ? (0x90 << 24) | (highlight & 0x00FFFFFF) : 0x50FFFFFF;
@@ -981,12 +1087,6 @@ public class SectionColorsScreen extends Screen {
                 edit.setAlpha(Math.max(alpha, 0.04f));
                 edit.render(g, mouseX, mouseY, partialTick);
 
-                if (dragRow == this) {
-                    g.fill(left, top, left + rowWidth, top + rowHeight, mulAlpha(0x40FFFFFF, alpha));
-                }
-                if (dragRow != null && index == dragTargetIndex) {
-                    g.fill(left, top - 1, left + rowWidth, top + 1, mulAlpha(0xFFFFFFFF, alpha));
-                }
                 if (Screen.hasShiftDown() && hovered && (!data.parent() || isDeletableHub())) {
                     g.fill(left, top, left + rowWidth, top + rowHeight, mulAlpha(0x80AA2E24, alpha));
                 }

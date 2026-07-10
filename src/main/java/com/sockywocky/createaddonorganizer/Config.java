@@ -78,10 +78,11 @@ public class Config {
     public static final ModConfigSpec.ConfigValue<List<? extends String>> BANNERS = BUILDER
             .comment("Per-section banner IMAGES, keyed by tab ID. An image overrides the colour for that section.",
                     "Format: \"<tabId> = <ref>\" where <ref> is \"res:<namespace>:<path>\" for a bundled/gallery",
-                    "texture, or \"file:<name>.png\" for a PNG in config/createaddonorganizer/banners/.",
+                    "texture, \"file:<name>.png\" for a PNG in config/createaddonorganizer/banners/, or",
+                    "\"remote:<name>.png\" for a banner fetched from the online gallery.",
                     "Managed by the in-game banner editor; banners are 160x17.")
             .defineListAllowEmpty("banners", List.of(),
-                    () -> "somemod:main = res:createaddonorganizer:textures/banner/example.png", Config::isValidBanner);
+                    () -> "somemod:main = res:createaddonorganizer:textures/banner/Create1.png", Config::isValidBanner);
 
     public static final ModConfigSpec.ConfigValue<List<? extends String>> ANIMATED_BANNERS = BUILDER
             .comment("Declares a banner texture as animated (a vertical strip of 17px frames), keyed by the",
@@ -90,7 +91,7 @@ public class Config {
                     "Bundled (res:) textures don't need this; they're auto-detected from a standard .mcmeta.",
                     "Managed by the in-game banner editor.")
             .defineListAllowEmpty("animatedBanners", List.of(),
-                    () -> "createaddonorganizer:custom_banner/example = 4", Config::isValidAnimatedBanner);
+                    () -> "createaddonorganizer:custom_banner/example = 2", Config::isValidAnimatedBanner);
 
     public static final ModConfigSpec.BooleanValue SHOW_ALL_BANNERS = BUILDER
             .comment("Some mods have a curated set of banners assigned to them; by default their picker only",
@@ -105,6 +106,19 @@ public class Config {
                     "\"<tabId> = <ref>\"; a tab can have several rows. Managed by the in-game banner editor.")
             .defineListAllowEmpty("extraBannerPool", List.of(),
                     () -> "somemod:main = file:example.png", Config::isValidBanner);
+
+    public static final ModConfigSpec.BooleanValue FETCH_ONLINE_BANNERS = BUILDER
+            .comment("If true, checks GitHub once per game launch (on a background thread) for new or",
+                    "updated community banners and credits. Never blocks loading, never retried mid-session.",
+                    "Disable for fully offline/airgapped use.")
+            .define("fetchOnlineBanners", true);
+
+    public static final ModConfigSpec.ConfigValue<String> BANNER_MANIFEST_URL = BUILDER
+            .comment("URL of the remote banner manifest (JSON). Only used when fetchOnlineBanners is true.",
+                    "Override to test against a local server or a fork's repository.")
+            .define("bannerManifestUrl",
+                    "https://cdn.jsdelivr.net/gh/SockyWocky7/createaddonorganizer@master/banners/index.json",
+                    Config::isValidUrl);
 
     public static final ModConfigSpec.BooleanValue TINTED_TEXT_BOX = BUILDER
             .comment("Draw a semi-transparent box behind section title text for contrast.")
@@ -627,6 +641,14 @@ public class Config {
         SPEC.save();
     }
 
+    public static boolean fetchOnlineBanners() {
+        return FETCH_ONLINE_BANNERS.get();
+    }
+
+    public static String bannerManifestUrl() {
+        return BANNER_MANIFEST_URL.get();
+    }
+
     public static List<String> extraPoolFor(ResourceLocation id) {
         String key = id.toString();
         List<String> out = new ArrayList<>();
@@ -719,6 +741,10 @@ public class Config {
         return parts.length == 2
                 && ResourceLocation.tryParse(parts[0].trim()) != null
                 && !parts[1].trim().isEmpty();
+    }
+
+    private static boolean isValidUrl(final Object obj) {
+        return obj instanceof String s && (s.startsWith("http://") || s.startsWith("https://"));
     }
 
     private static boolean isValidAnimatedBanner(final Object obj) {

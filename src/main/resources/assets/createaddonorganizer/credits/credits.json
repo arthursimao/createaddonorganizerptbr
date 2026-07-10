@@ -1,11 +1,7 @@
 [
   {
-    "name": "SockyWocky",
-    "banners": ["example.png"]
-  },
-  {
     "name": "Arthur",
-    "banners": ["cogwork_brown.png", "cogwork_blue.png", "cogwork_orange.png"],
+    "banners": ["Create1.png"],
     "color": "#34a4eb"
   }
 ]

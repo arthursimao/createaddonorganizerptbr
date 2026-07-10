@@ -6,7 +6,7 @@
     "farmersdelight:farmersdelight \u003d #FF262626"
   ],
   "banners": [
-    "create:base \u003d res:createaddonorganizer:textures/banner/cogwork.png"
+    "create:base \u003d res:createaddonorganizer:textures/banner/Create1.png"
   ],
   "animatedBanners": [],
   "tintedBox": true,

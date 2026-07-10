@@ -2,6 +2,7 @@ package com.sockywocky.createaddonorganizer;
 
 import com.sockywocky.createaddonorganizer.client.DevMode;
 import com.sockywocky.createaddonorganizer.client.Notice;
+import com.sockywocky.createaddonorganizer.client.RemoteBanners;
 import com.sockywocky.createaddonorganizer.client.SectionColorsScreen;
 
 import net.minecraft.client.Minecraft;
@@ -23,6 +24,7 @@ public class createaddonorganizerClient {
     private static final int MAX_ORGANIZE_ATTEMPTS = 10;
 
     private static boolean done = false;
+    private static boolean remoteSyncStarted = false;
     private static ClientLevel lastSeenLevel;
     private static int stableTicks = 0;
     private static int organizeAttempts = 0;
@@ -42,6 +44,11 @@ public class createaddonorganizerClient {
 
     private static void onClientTick(ClientTickEvent.Post event) {
         DevMode.tick(Minecraft.getInstance());
+        if (!remoteSyncStarted) {
+            remoteSyncStarted = true;
+            RemoteBanners.loadCacheFromDisk();
+            RemoteBanners.syncAsync();
+        }
         if (done) {
             return;
         }

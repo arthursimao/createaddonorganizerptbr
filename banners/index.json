@@ -1,0 +1,28 @@
+[
+  {
+    "name": "SockyWocky",
+    "banners": [
+      { "file": "example.png", "v": 1 }
+    ]
+  },
+  {
+    "name": "Arthur",
+    "color": "#34a4eb",
+    "banners": [
+      { "file": "Create1.png", "v": 1 },
+      { "file": "aeroworks1.png", "v": 1 },
+      { "file": "buzzybees1.png", "v": 1 }
+    ]
+  },
+  {
+    "name": "The Tophatted Dolphin",
+    "color": "#30FF4B",
+    "banners": [
+      { "file": "bnbBuilding1.png", "v": 1 },
+      { "file": "Escalated1.png", "v": 1 },
+      { "file": "CreatePrisim1.png", "v": 1 },
+      { "file": "Encased1.png", "v": 1 },
+      { "file": "Createbuildingblock1.png", "v": 1 }
+    ]
+  }
+]

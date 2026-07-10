@@ -27,11 +27,20 @@ public final class CreditsCatalog {
 
     public record Entry(boolean header, String label, int nameColor, ResourceLocation texture) {}
 
+    private record UnifiedContributor(String name, String color, List<String> bannerFiles) {}
+
     public static List<Entry> rows() {
+        List<UnifiedContributor> source = RemoteBanners.hasEverCached()
+                ? toUnified(RemoteBanners.contributors())
+                : toUnifiedFromJar(loadJarContributors());
+        return buildRows(source);
+    }
+
+    private static List<Entry> buildRows(List<UnifiedContributor> contributors) {
         List<Entry> out = new ArrayList<>();
-        for (Contributor contributor : loadContributors()) {
+        for (UnifiedContributor contributor : contributors) {
             List<ResourceLocation> textures = new ArrayList<>();
-            for (String filename : contributor.banners()) {
+            for (String filename : contributor.bannerFiles()) {
                 ResourceLocation texture = resolveBanner(contributor.name(), filename);
                 if (texture != null) {
                     textures.add(texture);
@@ -40,7 +49,7 @@ public final class CreditsCatalog {
             if (textures.isEmpty()) {
                 continue;
             }
-            int color = nameColor(contributor);
+            int color = nameColor(contributor.color());
             out.add(new Entry(true, contributor.name(), color, null));
             for (ResourceLocation texture : textures) {
                 out.add(new Entry(false, null, color, texture));
@@ -49,15 +58,32 @@ public final class CreditsCatalog {
         return out;
     }
 
-    private static int nameColor(Contributor contributor) {
-        if (contributor.color() == null) {
+    private static List<UnifiedContributor> toUnifiedFromJar(List<Contributor> contributors) {
+        List<UnifiedContributor> out = new ArrayList<>(contributors.size());
+        for (Contributor c : contributors) {
+            out.add(new UnifiedContributor(c.name(), c.color(), c.banners()));
+        }
+        return out;
+    }
+
+    private static List<UnifiedContributor> toUnified(List<RemoteBanners.RemoteContributor> contributors) {
+        List<UnifiedContributor> out = new ArrayList<>(contributors.size());
+        for (RemoteBanners.RemoteContributor c : contributors) {
+            List<String> files = c.banners().stream().map(RemoteBanners.RemoteBannerFile::file).toList();
+            out.add(new UnifiedContributor(c.name(), c.color(), files));
+        }
+        return out;
+    }
+
+    private static int nameColor(String color) {
+        if (color == null) {
             return DEFAULT_NAME_COLOR;
         }
-        Integer parsed = Config.parseColor(contributor.color());
+        Integer parsed = Config.parseColor(color);
         return parsed != null ? parsed : DEFAULT_NAME_COLOR;
     }
 
-    private static List<Contributor> loadContributors() {
+    private static List<Contributor> loadJarContributors() {
         try (InputStream in = Minecraft.getInstance().getResourceManager().open(MANIFEST);
                 Reader reader = new InputStreamReader(in, StandardCharsets.UTF_8)) {
             Contributor[] parsed = GSON.fromJson(reader, Contributor[].class);
@@ -72,13 +98,19 @@ public final class CreditsCatalog {
     }
 
     private static ResourceLocation resolveBanner(String contributorName, String filename) {
-        String ref = "res:" + createaddonorganizer.MODID + ":textures/banner/" + filename;
-        ResourceLocation texture = BannerTextures.resolve(ref);
-        if (texture == null || Minecraft.getInstance().getResourceManager().getResource(texture).isEmpty()) {
-            createaddonorganizer.LOGGER.warn("[CAO] credits manifest entry for '{}' references missing banner texture '{}'",
-                    contributorName, filename);
-            return null;
+        ResourceLocation bundled = BannerTextures.resolve("res:" + createaddonorganizer.MODID + ":textures/banner/" + filename);
+        if (bundled != null && bundledResourceExists(bundled)) {
+            return bundled;
         }
-        return texture;
+        if (RemoteBanners.isAvailable(filename)) {
+            return BannerTextures.resolve("remote:" + filename);
+        }
+        createaddonorganizer.LOGGER.warn("[CAO] credits manifest entry for '{}' references unresolvable banner '{}'",
+                contributorName, filename);
+        return null;
+    }
+
+    private static boolean bundledResourceExists(ResourceLocation texture) {
+        return Minecraft.getInstance().getResourceManager().getResource(texture).isPresent();
     }
 }

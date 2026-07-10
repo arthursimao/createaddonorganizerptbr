@@ -38,6 +38,7 @@ public final class BannerTextures {
     private static final Path BANNERS_DIR = FMLPaths.CONFIGDIR.get().resolve("createaddonorganizer/banners");
 
     private static final Map<String, ResourceLocation> FILE_REGISTERED = new HashMap<>();
+    private static final Map<String, ResourceLocation> REMOTE_REGISTERED = new HashMap<>();
     private static final Map<ResourceLocation, Integer> FILE_HEIGHTS = new HashMap<>();
 
     private BannerTextures() {}
@@ -54,6 +55,16 @@ public final class BannerTextures {
             ResourceLocation cached = FILE_REGISTERED.get(fileName);
             return cached != null ? cached : loadFileAndCache(BANNERS_DIR.resolve(fileName), fileName);
         }
+        if (ref.startsWith("remote:")) {
+            String fileName = ref.substring(7);
+            ResourceLocation cached = REMOTE_REGISTERED.get(fileName);
+            if (cached != null) {
+                return cached;
+            }
+            return RemoteBanners.isAvailable(fileName)
+                    ? loadRemoteAndCache(RemoteBanners.fileFor(fileName), fileName)
+                    : null;
+        }
         return ResourceLocation.tryParse(ref);
     }
 
@@ -61,8 +72,10 @@ public final class BannerTextures {
         Map<ResourceLocation, Resource> found = Minecraft.getInstance().getResourceManager()
                 .listResources("textures/banner", p -> p.getPath().endsWith(".png"));
         List<String> bundled = new ArrayList<>();
+        List<String> bundledFileNames = new ArrayList<>();
         for (ResourceLocation tex : found.keySet()) {
             bundled.add(resRef(tex));
+            bundledFileNames.add(tex.getPath().substring(tex.getPath().lastIndexOf('/') + 1));
         }
         bundled.sort(String.CASE_INSENSITIVE_ORDER);
 
@@ -77,9 +90,16 @@ public final class BannerTextures {
         }
         uploads.sort(String.CASE_INSENSITIVE_ORDER);
 
-        List<String> out = new ArrayList<>(bundled.size() + uploads.size());
+        List<String> remotes = RemoteBanners.availableFilenames().stream()
+                .filter(f -> bundledFileNames.stream().noneMatch(b -> b.equalsIgnoreCase(f)))
+                .sorted(String.CASE_INSENSITIVE_ORDER)
+                .map(f -> "remote:" + f)
+                .toList();
+
+        List<String> out = new ArrayList<>(bundled.size() + uploads.size() + remotes.size());
         out.addAll(bundled);
         out.addAll(uploads);
+        out.addAll(remotes);
         return out;
     }
 
@@ -146,6 +166,21 @@ public final class BannerTextures {
             return rl;
         } catch (IOException e) {
             createaddonorganizer.LOGGER.warn("[CAO] failed to load banner image {}", path, e);
+            return null;
+        }
+    }
+
+    private static ResourceLocation loadRemoteAndCache(Path path, String fileName) {
+        ResourceLocation rl = ResourceLocation.fromNamespaceAndPath(createaddonorganizer.MODID,
+                "custom_banner/remote/" + sanitizeStem(fileName));
+        try (InputStream in = Files.newInputStream(path)) {
+            NativeImage resized = resizeForImport(NativeImage.read(in));
+            FILE_HEIGHTS.put(rl, resized.getHeight());
+            Minecraft.getInstance().getTextureManager().register(rl, new DynamicTexture(resized));
+            REMOTE_REGISTERED.put(fileName, rl);
+            return rl;
+        } catch (IOException e) {
+            createaddonorganizer.LOGGER.warn("[CAO] failed to load remote banner image {}", path, e);
             return null;
         }
     }

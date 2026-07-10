@@ -328,7 +328,7 @@ public final class SectionIndexPanel {
         List<ItemStack> newIcons = new ArrayList<>(live.size());
         for (Section section : live) {
             newIds.add(section.id());
-            newTitles.add(((CaoSection) section).title());
+            newTitles.add(CaoSection.titleOf(section));
             newIcons.add(iconFor(section));
         }
         ids = newIds;

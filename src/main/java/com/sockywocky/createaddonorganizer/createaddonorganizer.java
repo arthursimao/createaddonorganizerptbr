@@ -193,7 +193,10 @@ public class createaddonorganizer {
             List<Section> kept = new ArrayList<>(sections.size());
             boolean pruned = false;
             for (Section section : sections) {
-                CaoSection cao = (CaoSection) section;
+                if (!(section instanceof CaoSection cao)) {
+                    kept.add(section);
+                    continue;
+                }
                 List<ItemStack> stacks = cao.items().toStacks();
                 List<ItemStack> surviving = new ArrayList<>(stacks.size());
                 for (ItemStack stack : stacks) {
@@ -410,7 +413,7 @@ public class createaddonorganizer {
             byId.put(s.id(), s);
         }
         List<ResourceLocation> ordered = Config.applyOrder(new ArrayList<>(byId.keySet()),
-                id -> ((CaoSection) byId.get(id)).title().getString());
+                id -> CaoSection.titleOf(byId.get(id)).getString());
         List<Section> out = new ArrayList<>(ordered.size());
         for (ResourceLocation id : ordered) {
             out.add(byId.get(id));

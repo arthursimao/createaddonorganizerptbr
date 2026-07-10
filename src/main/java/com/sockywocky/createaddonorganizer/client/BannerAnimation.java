@@ -50,6 +50,7 @@ public final class BannerAnimation {
         }
         FrameState state = FRAME_STATE.computeIfAbsent(texture, t -> new FrameState());
         if (!hovered) {
+            state.lastAdvanceMillis = 0L;
             return state.frame;
         }
         long now = System.currentTimeMillis();

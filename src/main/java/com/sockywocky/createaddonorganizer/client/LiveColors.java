@@ -22,21 +22,21 @@ public final class LiveColors {
         if (isSimulated(id)) {
             return;
         }
-        replace(id, s -> ((CaoSection) s).withBanner(argb));
+        replace(id, s -> s.withBanner(argb));
     }
 
     public static void applyTexture(ResourceLocation id, ResourceLocation texture) {
         if (isSimulated(id)) {
             return;
         }
-        replace(id, s -> ((CaoSection) s).withTexture(texture));
+        replace(id, s -> s.withTexture(texture));
     }
 
     public static void applyTextColor(ResourceLocation id, int argb) {
         if (isSimulated(id)) {
             return;
         }
-        replace(id, s -> ((CaoSection) s).withTextColor(argb));
+        replace(id, s -> s.withTextColor(argb));
     }
 
     public static void applyTitle(ResourceLocation id, Component title) {
@@ -44,7 +44,7 @@ public final class LiveColors {
             SimulatedHub.applyTitle(id, title);
             return;
         }
-        replace(id, s -> ((CaoSection) s).withTitle(title));
+        replace(id, s -> s.withTitle(title));
     }
 
     public static void applyOrder(ResourceLocation parent, List<ResourceLocation> orderedAddonIds) {
@@ -133,9 +133,8 @@ public final class LiveColors {
         if (toSimulated) {
             Section removed = remove(id);
             if (removed != null) {
-                CaoSection cao = (CaoSection) removed;
-                SimulatedHub.inject(id, cao.title());
-                SimulatedHub.foldItems(id, cao.items().toStacks());
+                SimulatedHub.inject(id, CaoSection.titleOf(removed));
+                SimulatedHub.foldItems(id, removed.items().toStacks());
             }
             return;
         }
@@ -149,7 +148,7 @@ public final class LiveColors {
         return SimulatedSupport.isLoaded() && SimulatedHub.ownerIfAny(id) != null;
     }
 
-    private static void replace(ResourceLocation id, UnaryOperator<Section> rebuild) {
+    private static void replace(ResourceLocation id, UnaryOperator<CaoSection> rebuild) {
         for (ResourceLocation parent : new ArrayList<>(FancyTabSections.SECTIONS_MAP.keySet())) {
             List<Section> sections = FancyTabSections.SECTIONS_MAP.get(parent);
             if (sections == null) {
@@ -158,8 +157,8 @@ public final class LiveColors {
             boolean changed = false;
             List<Section> rebuilt = new ArrayList<>(sections.size());
             for (Section section : sections) {
-                if (section.id().equals(id)) {
-                    rebuilt.add(rebuild.apply(section));
+                if (section.id().equals(id) && section instanceof CaoSection cao) {
+                    rebuilt.add(rebuild.apply(cao));
                     changed = true;
                 } else {
                     rebuilt.add(section);

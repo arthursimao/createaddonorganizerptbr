@@ -25,7 +25,10 @@
       { "file": "Createbuildingblock1.png", "v": 1 },
       { "file": "EnchantmentIndustry1.png", "v": 1 },
       { "file": "Radars1.png", "v": 1 },
-      { "file": "Diesel1.png", "v": 1 }
+      { "file": "Diesel1.png", "v": 1 },
+      { "file": "SNR_locometal1.png", "v": 1 },
+      { "file": "solarpowered1.png", "v": 1 },
+      { "file": "designNdecor1.png", "v": 1 }
     ]
   }
 ]

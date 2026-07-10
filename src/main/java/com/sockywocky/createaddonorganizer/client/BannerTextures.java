@@ -61,7 +61,7 @@ public final class BannerTextures {
             if (cached != null) {
                 return cached;
             }
-            return RemoteBanners.isAvailable(fileName)
+            return RemoteBanners.isCachedOnDisk(fileName)
                     ? loadRemoteAndCache(RemoteBanners.fileFor(fileName), fileName)
                     : null;
         }

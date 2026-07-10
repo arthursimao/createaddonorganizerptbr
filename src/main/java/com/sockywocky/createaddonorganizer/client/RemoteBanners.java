@@ -83,6 +83,10 @@ public final class RemoteBanners {
         return availableFiles.contains(filename);
     }
 
+    public static boolean isCachedOnDisk(String filename) {
+        return Files.exists(REMOTE_DIR.resolve(filename));
+    }
+
     public static Path fileFor(String filename) {
         return REMOTE_DIR.resolve(filename);
     }

@@ -210,6 +210,11 @@ public class Config {
                     "false - at the bottom of the screen, just above the OK/Cancel buttons.")
             .define("bannerEditorPreviewTop", false);
 
+    public static final ModConfigSpec.IntValue GRADIENT_CELL_SIZE = BUILDER
+            .comment("Chunkiness (in GUI pixels) of the pixelated hue/saturation/value picker gradients in the",
+                    "banner editor. 1 is a smooth gradient; higher values look blockier/more pixel-art.")
+            .defineInRange("gradientCellSize", 5, 1, 20);
+
     static final ModConfigSpec SPEC = BUILDER.build();
 
     public static void resetAllToDefault() {
@@ -588,6 +593,10 @@ public class Config {
 
     public static boolean bannerEditorPreviewTop() {
         return BANNER_EDITOR_PREVIEW_TOP.get();
+    }
+
+    public static int gradientCellSize() {
+        return GRADIENT_CELL_SIZE.get();
     }
 
     public static Integer textSecondaryColorFor(ResourceLocation id) {

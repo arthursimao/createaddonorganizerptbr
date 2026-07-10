@@ -9,6 +9,7 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.ContainerObjectSelectionList;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.components.events.GuiEventListener;
 import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.screens.ConfirmLinkScreen;
@@ -47,7 +48,11 @@ public class CreditsScreen extends Screen {
         addRenderableWidget(list);
 
         addRenderableWidget(Button.builder(Component.translatable("gui.done"), b -> onClose())
-                .bounds(this.width / 2 - 100, this.height - 30, 200, 20).build());
+                .bounds(this.width / 2 - 100, this.height - 30, 178, 20).build());
+        addRenderableWidget(Button.builder(Component.literal("?"), b -> {})
+                .bounds(this.width / 2 + 82, this.height - 30, 18, 20)
+                .tooltip(Tooltip.create(Component.translatable("createaddonorganizer.colors.credits.onlineHint")))
+                .build());
     }
 
     @Override

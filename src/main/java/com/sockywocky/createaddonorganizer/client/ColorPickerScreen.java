@@ -8,7 +8,9 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.function.DoubleConsumer;
 import java.util.function.DoubleFunction;
+import java.util.function.IntSupplier;
 
+import com.mojang.blaze3d.platform.NativeImage;
 import com.sockywocky.createaddonorganizer.Config;
 import com.sockywocky.createaddonorganizer.client.simulated.SimulatedSupport;
 import com.sockywocky.createaddonorganizer.createaddonorganizer;
@@ -27,8 +29,10 @@ import net.minecraft.client.gui.narration.NarratableEntry;
 import net.minecraft.client.gui.narration.NarrationElementOutput;
 import net.minecraft.client.gui.screens.ConfirmScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.util.FastColor;
 import net.minecraft.util.Mth;
 
 public class ColorPickerScreen extends Screen {
@@ -64,6 +68,9 @@ public class ColorPickerScreen extends Screen {
 
     private int previewY;
     private int panelTop;
+
+    private final GradientTexture svSquareTexture = new GradientTexture("sv_square");
+    private final GradientTexture hueBarTexture = new GradientTexture("hue_bar");
 
     public ColorPickerScreen(Screen parent, ResourceLocation id, Component sectionName, boolean isMainTab) {
         super(Component.translatable("createaddonorganizer.colors.pick"));
@@ -341,8 +348,9 @@ public class ColorPickerScreen extends Screen {
             refreshing[0] = false;
         };
 
-        addRenderableWidget(new SvSquare(x, y, width, squareHeight, target, refreshHexText));
-        addRenderableWidget(new HueBar(x, barY, width, barHeight, target, refreshHexText));
+        IntSupplier cellSize = Config::gradientCellSize;
+        addRenderableWidget(new SvSquare(x, y, width, squareHeight, target, refreshHexText, cellSize, svSquareTexture));
+        addRenderableWidget(new HueBar(x, barY, width, barHeight, target, refreshHexText, cellSize, hueBarTexture));
         addRenderableWidget(hexBox);
         addRenderableWidget(Button.builder(Component.translatable("createaddonorganizer.colors.copy"),
                         b -> this.minecraft.keyboardHandler.setClipboard(hexBox.getValue()))
@@ -610,6 +618,8 @@ public class ColorPickerScreen extends Screen {
 
     @Override
     public void onClose() {
+        svSquareTexture.release();
+        hueBarTexture.release();
         this.minecraft.setScreen(parent);
     }
 
@@ -711,16 +721,73 @@ public class ColorPickerScreen extends Screen {
         }
     }
 
-    private static final int GRADIENT_CELL = 5;
+    @FunctionalInterface
+    private interface CellColor {
+        int argb(float fracX, float fracY);
+    }
+
+    private static final class GradientTexture {
+        private final ResourceLocation id;
+        private DynamicTexture texture;
+        private float keyA = Float.NaN;
+        private int keyCell = -1;
+
+        GradientTexture(String name) {
+            this.id = ResourceLocation.fromNamespaceAndPath(createaddonorganizer.MODID, "gradient_cache/" + name);
+        }
+
+        ResourceLocation ensure(int w, int h, float keyA, int cellSize, CellColor fn) {
+            if (texture != null && this.keyA == keyA && this.keyCell == cellSize) {
+                return id;
+            }
+            NativeImage image = texture != null ? texture.getPixels() : new NativeImage(w, h, false);
+            for (int cy = 0; cy < h; cy += cellSize) {
+                int ch = Math.min(cellSize, h - cy);
+                float fracY = (cy + ch / 2f) / h;
+                for (int cx = 0; cx < w; cx += cellSize) {
+                    int cw = Math.min(cellSize, w - cx);
+                    float fracX = (cx + cw / 2f) / w;
+                    int abgr = FastColor.ABGR32.fromArgb32(0xFF000000 | fn.argb(fracX, fracY));
+                    for (int py = cy; py < cy + ch; py++) {
+                        for (int px = cx; px < cx + cw; px++) {
+                            image.setPixelRGBA(px, py, abgr);
+                        }
+                    }
+                }
+            }
+            if (texture == null) {
+                texture = new DynamicTexture(image);
+                Minecraft.getInstance().getTextureManager().register(id, texture);
+            } else {
+                texture.upload();
+            }
+            this.keyA = keyA;
+            this.keyCell = cellSize;
+            return id;
+        }
+
+        void release() {
+            if (texture != null) {
+                Minecraft.getInstance().getTextureManager().release(id);
+                texture = null;
+                keyA = Float.NaN;
+                keyCell = -1;
+            }
+        }
+    }
 
     private static class SvSquare extends AbstractWidget {
         private final Hsva target;
         private final Runnable afterChange;
+        private final IntSupplier cellSize;
+        private final GradientTexture gradient;
 
-        SvSquare(int x, int y, int w, int h, Hsva target, Runnable afterChange) {
+        SvSquare(int x, int y, int w, int h, Hsva target, Runnable afterChange, IntSupplier cellSize, GradientTexture gradient) {
             super(x, y, w, h, Component.empty());
             this.target = target;
             this.afterChange = afterChange;
+            this.cellSize = cellSize;
+            this.gradient = gradient;
         }
 
         @Override
@@ -745,15 +812,9 @@ public class ColorPickerScreen extends Screen {
             int y0 = getY();
             int w = getWidth();
             int h = getHeight();
-            for (int cy = 0; cy < h; cy += GRADIENT_CELL) {
-                int ch = Math.min(GRADIENT_CELL, h - cy);
-                float v = 1f - (cy + ch / 2f) / h;
-                for (int cx = 0; cx < w; cx += GRADIENT_CELL) {
-                    int cw = Math.min(GRADIENT_CELL, w - cx);
-                    float s = (cx + cw / 2f) / w;
-                    g.fill(x0 + cx, y0 + cy, x0 + cx + cw, y0 + cy + ch, 0xFF000000 | ColorUtil.hsvToRgb(target.h, s, v));
-                }
-            }
+            ResourceLocation tex = gradient.ensure(w, h, target.h, cellSize.getAsInt(),
+                    (fracX, fracY) -> ColorUtil.hsvToRgb(target.h, fracX, 1f - fracY));
+            g.blit(tex, x0, y0, 0.0F, 0.0F, w, h, w, h);
 
             int mx = x0 + Math.round(target.s * w);
             int my = y0 + Math.round((1 - target.v) * h);
@@ -766,14 +827,18 @@ public class ColorPickerScreen extends Screen {
 
     private static class HueBar extends ChannelSlider {
         private final Hsva target;
+        private final IntSupplier cellSize;
+        private final GradientTexture gradient;
 
-        HueBar(int x, int y, int w, int h, Hsva target, Runnable afterChange) {
+        HueBar(int x, int y, int w, int h, Hsva target, Runnable afterChange, IntSupplier cellSize, GradientTexture gradient) {
             super(x, y, w, h, Component.translatable("createaddonorganizer.colors.hue"), target.h,
                     v -> {
                         target.h = (float) v;
                         afterChange.run();
                     });
             this.target = target;
+            this.cellSize = cellSize;
+            this.gradient = gradient;
         }
 
         @Override
@@ -782,11 +847,9 @@ public class ColorPickerScreen extends Screen {
             int y0 = getY();
             int w = getWidth();
             int h = getHeight();
-            for (int cx = 0; cx < w; cx += GRADIENT_CELL) {
-                int cw = Math.min(GRADIENT_CELL, w - cx);
-                float hue = (cx + cw / 2f) / w;
-                g.fill(x0 + cx, y0, x0 + cx + cw, y0 + h, 0xFF000000 | ColorUtil.hsvToRgb(hue, 1f, 1f));
-            }
+            ResourceLocation tex = gradient.ensure(w, h, 0f, cellSize.getAsInt(),
+                    (fracX, fracY) -> ColorUtil.hsvToRgb(fracX, 1f, 1f));
+            g.blit(tex, x0, y0, 0.0F, 0.0F, w, h, w, h);
 
             int mx = x0 + Math.round(target.h * w);
             drawMarker(g, mx, y0 + h / 2);

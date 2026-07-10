@@ -13,6 +13,7 @@ import com.mojang.serialization.JsonOps;
 import com.sockywocky.createaddonorganizer.Config;
 import com.sockywocky.createaddonorganizer.client.BannerTextures;
 import com.sockywocky.createaddonorganizer.client.CaoSection;
+import com.sockywocky.createaddonorganizer.client.SafeIcon;
 import com.sockywocky.createaddonorganizer.mixin.simulated.SimResourceManagerAccessor;
 
 import dev.simulated_team.simulated.client.sections.SimulatedSection;
@@ -274,8 +275,9 @@ public final class SimulatedHub {
 
     private static ItemStack ownedIcon(ResourceLocation sectionId) {
         var tab = BuiltInRegistries.CREATIVE_MODE_TAB.get(sectionId);
-        if (tab != null && !tab.getIconItem().isEmpty()) {
-            return tab.getIconItem();
+        ItemStack tabIcon = SafeIcon.of(tab);
+        if (!tabIcon.isEmpty()) {
+            return tabIcon;
         }
         List<ResourceLocation> itemIds = OWNED_ITEM_IDS.get(sectionId);
         if (itemIds != null && !itemIds.isEmpty()) {

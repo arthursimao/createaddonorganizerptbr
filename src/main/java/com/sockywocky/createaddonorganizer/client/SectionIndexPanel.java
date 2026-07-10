@@ -338,8 +338,9 @@ public final class SectionIndexPanel {
 
     private static ItemStack iconFor(Section section) {
         CreativeModeTab tab = BuiltInRegistries.CREATIVE_MODE_TAB.get(section.id());
-        if (tab != null && !tab.getIconItem().isEmpty()) {
-            return tab.getIconItem();
+        ItemStack tabIcon = SafeIcon.of(tab);
+        if (!tabIcon.isEmpty()) {
+            return tabIcon;
         }
         List<ItemStack> stacks = section.items().toStacks();
         return stacks.isEmpty() ? ItemStack.EMPTY : stacks.get(0);

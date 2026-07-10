@@ -35,6 +35,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.CreativeModeTab;
 import net.minecraft.world.item.CreativeModeTabs;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackLinkedSet;
 import net.neoforged.bus.api.EventPriority;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -170,9 +171,66 @@ public class createaddonorganizer {
 
         TabLayout.build();
         rebuildTabs(MANAGED_PARENTS, params);
+        reconcilePrunedItems(params);
         refreshSearchTrees(params);
         resetCreativeScrollIfOpen();
         return true;
+    }
+
+    private static void reconcilePrunedItems(CreativeModeTab.ItemDisplayParameters params) {
+        Set<ResourceLocation> changed = new HashSet<>();
+        for (ResourceLocation parent : MANAGED_PARENTS) {
+            if (SimulatedSupport.isMainTab(parent)) {
+                continue;
+            }
+            CreativeModeTab tab = BuiltInRegistries.CREATIVE_MODE_TAB.get(parent);
+            List<Section> sections = FancyTabSections.SECTIONS_MAP.get(parent);
+            if (tab == null || sections == null) {
+                continue;
+            }
+            Set<ItemStack> present = ItemStackLinkedSet.createTypeAndComponentsSet();
+            present.addAll(tab.getSearchTabDisplayItems());
+            List<Section> kept = new ArrayList<>(sections.size());
+            boolean pruned = false;
+            for (Section section : sections) {
+                CaoSection cao = (CaoSection) section;
+                List<ItemStack> stacks = cao.items().toStacks();
+                List<ItemStack> surviving = new ArrayList<>(stacks.size());
+                for (ItemStack stack : stacks) {
+                    if (present.contains(stack)) {
+                        surviving.add(stack);
+                    }
+                }
+                if (surviving.size() == stacks.size()) {
+                    kept.add(section);
+                    continue;
+                }
+                pruned = true;
+                if (surviving.isEmpty()) {
+                    continue;
+                }
+                ConglomerateOfItems conglomerate = ConglomerateOfItems.create();
+                for (ItemStack stack : surviving) {
+                    conglomerate.add(stack);
+                }
+                kept.add(new CaoSection(cao.id(), cao.title(), cao.bannerColor(), cao.texture(),
+                        cao.textColor(), conglomerate));
+            }
+            if (!pruned) {
+                continue;
+            }
+            dropParentSections(parent);
+            for (Section section : kept) {
+                FancyTabSections.addSection(parent, section);
+            }
+            changed.add(parent);
+        }
+        if (changed.isEmpty()) {
+            return;
+        }
+        LOGGER.info("[CAO] another mod pruned items from final tab contents; realigning section rows for {}", changed);
+        TabLayout.build();
+        rebuildTabs(changed, params);
     }
 
     private static void resetCreativeScrollIfOpen() {
@@ -263,6 +321,7 @@ public class createaddonorganizer {
     public static void refreshTabLayout(CreativeModeTab.ItemDisplayParameters params) {
         TabLayout.build();
         rebuildTabs(MANAGED_PARENTS, params);
+        reconcilePrunedItems(params);
     }
 
     public static void dropParentSections(ResourceLocation parent) {
@@ -338,6 +397,7 @@ public class createaddonorganizer {
         Set<ResourceLocation> toRebuild = new HashSet<>(stillWanted);
         toRebuild.addAll(dropped);
         rebuildTabs(toRebuild, params);
+        reconcilePrunedItems(params);
         resetCreativeScrollIfOpen();
     }
 

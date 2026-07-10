@@ -106,7 +106,7 @@ public final class BackportPanelSkin implements IndexPanelSkin {
                 if (selected) {
                     gg.blit(ATLAS, icon.x() - 7, icon.y() - 1, 36f, 24f, 30, 19, ATLAS_SIZE, ATLAS_SIZE);
                 }
-                gg.renderItem(view.icons().get(idx), icon.x(), icon.y());
+                SafeIcon.render(gg, view.icons().get(idx), icon.x(), icon.y());
                 if (!selected && icon.contains(mouseX, mouseY)) {
                     RenderSystem.enableBlend();
                     gg.blit(ATLAS, icon.x(), icon.y(), 32f, 44f, ICON, ICON, ATLAS_SIZE, ATLAS_SIZE);

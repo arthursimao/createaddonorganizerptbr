@@ -106,7 +106,7 @@ public final class RefurbishedPanelSkin implements IndexPanelSkin {
                 Rect tab = tabRect(screen, v);
                 ResourceLocation sprite = idx == view.selectedIndex() ? TAB_SELECTED : TAB_UNSELECTED;
                 gg.blit(sprite, tab.x(), tab.y(), 0f, 0f, TAB_W, TAB_H, TAB_W, TAB_H);
-                gg.renderItem(view.icons().get(idx), tab.x() + 8, tab.y() + 5);
+                SafeIcon.render(gg, view.icons().get(idx), tab.x() + 8, tab.y() + 5);
             }
             if (count > VISIBLE) {
                 drawScrollButton(gg, upRect(screen), 0f, view.scroll() > 0, mouseX, mouseY);

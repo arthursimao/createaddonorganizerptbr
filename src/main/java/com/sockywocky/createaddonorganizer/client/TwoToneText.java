@@ -22,6 +22,10 @@ public final class TwoToneText {
         targetScale = null;
     }
 
+    public static boolean renderTargetActive() {
+        return targetHeight != null;
+    }
+
     public static void draw(GuiGraphics g, Font font, Component text, int x, int y, int primaryArgb, int secondaryArgb) {
         g.drawString(font, text, x, y, primaryArgb, true);
         int w = font.width(text);

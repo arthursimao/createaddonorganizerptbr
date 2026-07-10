@@ -252,8 +252,8 @@ public class AddSectionScreen extends Screen {
                     g.fill(left, top, left + rowWidth, top + rowHeight, 0x40FFFFFF);
                 }
                 CreativeModeTab tab = BuiltInRegistries.CREATIVE_MODE_TAB.get(id);
-                ItemStack icon = tab != null ? tab.getIconItem() : ItemStack.EMPTY;
-                g.renderItem(icon, left + 4, top + (rowHeight - 16) / 2);
+                ItemStack icon = SafeIcon.of(tab);
+                SafeIcon.render(g, icon, left + 4, top + (rowHeight - 16) / 2);
                 g.drawString(font, name, left + 26, top + (rowHeight - 8) / 2, 0xFFFFFFFF);
                 if (placed) {
                     g.fill(left, top, left + rowWidth, top + rowHeight, 0xA0202020);

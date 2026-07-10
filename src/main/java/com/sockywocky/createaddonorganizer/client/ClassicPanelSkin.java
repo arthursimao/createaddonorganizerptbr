@@ -111,7 +111,7 @@ public final class ClassicPanelSkin implements IndexPanelSkin {
             } else if (slotHovered) {
                 gg.fill(ix, iy, ix + ICON, iy + ICON, DARK_HOVER);
             }
-            gg.renderItem(view.icons().get(i), ix + 1, iy + 1);
+            SafeIcon.render(gg, view.icons().get(i), ix + 1, iy + 1);
         }
         gg.disableScissor();
     }

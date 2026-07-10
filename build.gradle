@@ -20,6 +20,17 @@ sourceSets.main.resources {
 }
 
 repositories {
+    exclusiveContent {
+        forRepository {
+            maven {
+                name = 'Modrinth'
+                url = 'https://api.modrinth.com/maven'
+            }
+        }
+        filter {
+            includeGroup 'maven.modrinth'
+        }
+    }
 }
 
 base {
@@ -84,6 +95,12 @@ configurations {
 
 dependencies {
     compileOnly fileTree(dir: 'libs', include: ['*.jar'])
+    jarJar(implementation('maven.modrinth:fancytabsections')) {
+        version {
+            strictly '[3.0,4.0)'
+            prefer '3.2-NEOFORGE-1.21.1'
+        }
+    }
 }
 
 var generateModMetadata = tasks.register("generateModMetadata", ProcessResources) {

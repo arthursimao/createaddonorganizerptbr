@@ -1,0 +1,21 @@
+name: Validate banner manifest
+
+on:
+  push:
+    paths:
+      - "banners/**"
+      - ".github/scripts/validate_banners.py"
+      - ".github/workflows/validate-banners.yml"
+  pull_request:
+    paths:
+      - "banners/**"
+      - ".github/scripts/validate_banners.py"
+      - ".github/workflows/validate-banners.yml"
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate banners/index.json
+        run: python3 .github/scripts/validate_banners.py

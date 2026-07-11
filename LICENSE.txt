@@ -2,17 +2,36 @@ All Rights Reserved
 
 Copyright (c) 2026 SockyWocky
 
-This software and associated files (the "Software") are the property of the
-copyright holder. All rights are reserved.
+All rights reserved, except as expressly permitted below.
 
-No part of the Software may be used, copied, modified, merged, published,
-distributed, sublicensed, or sold without the prior written permission of
-the copyright holder.
+Permission is granted, free of charge, to any person to:
 
-The Software is provided "as is", without warranty of any kind, express or
-implied, including but not limited to the warranties of merchantability,
-fitness for a particular purpose and noninfringement. In no event shall the
-author or copyright holder be liable for any claim, damages or other
-liability, whether in an action of contract, tort or otherwise, arising
-from, out of or in connection with the Software or the use or other
-dealings in the Software.
+1. USE — download, install, and play with the Software.
+
+2. INCLUDE IN MODPACKS — distribute unmodified copies of the Software as
+   part of a modpack, provided that:
+   (a) the modpack is available free of charge to play, and
+   (b) credit is given to the copyright holder, with a link to the
+       Software's official download or repository page.
+
+3. VIEW SOURCE AND CONTRIBUTE — view the source code, and fork the
+   repository for the purpose of proposing changes back to the official
+   repository (e.g. via pull requests). By submitting a contribution, you
+   grant the copyright holder a perpetual, irrevocable, worldwide,
+   royalty-free right to use, modify, relicense, and distribute that
+   contribution as part of the Software.
+
+The following require prior written permission from the copyright holder:
+
+- Re-uploading or re-hosting the Software as a standalone download on any
+  platform.
+- Distributing modified versions of the Software.
+- Selling the Software or including it in any paid product.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

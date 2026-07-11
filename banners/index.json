@@ -1,11 +1,5 @@
 [
   {
-    "name": "SockyWocky",
-    "banners": [
-      { "file": "example.png", "v": 1 }
-    ]
-  },
-  {
     "name": "Arthur",
     "color": "#34a4eb",
     "banners": [
@@ -24,11 +18,25 @@
       { "file": "Encased1.png", "v": 1 },
       { "file": "Createbuildingblock1.png", "v": 1 },
       { "file": "EnchantmentIndustry1.png", "v": 1 },
-      { "file": "Radars1.png", "v": 1 },
+      { "file": "EnchantmentIndustry2.png", "v": 1 },
       { "file": "Diesel1.png", "v": 1 },
       { "file": "SNR_locometal1.png", "v": 1 },
       { "file": "solarpowered1.png", "v": 1 },
-      { "file": "designNdecor1.png", "v": 1 }
+      { "file": "designNdecor1.png", "v": 1 },
+      { "file": "cbc1.png", "v": 1 },
+      { "file": "ElectroEnergistics1.png", "v": 1 },
+      { "file": "hypertubes1.png", "v": 1 },
+      { "file": "SNR_tracks1.png", "v": 1 },
+      { "file": "BlazeBurnerFuels1.png", "v": 1 },
+      { "file": "Radars1.png", "v": 1 }
+    ]
+  },
+  {
+    "name": "rafael_x2",
+    "color": "#7f3fd9",
+    "banners": [
+      {"file": "powergrid1.png", "v": 1 },
+      {"file": "optics1.png", "v": 1 }
     ]
   }
 ]

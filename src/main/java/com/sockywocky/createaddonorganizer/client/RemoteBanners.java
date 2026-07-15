@@ -12,6 +12,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -20,6 +21,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.sockywocky.createaddonorganizer.Config;
 import com.sockywocky.createaddonorganizer.createaddonorganizer;
@@ -55,6 +57,12 @@ public final class RemoteBanners {
                 return;
             }
             List<RemoteContributor> parsed = parseManifest(Files.readAllBytes(MANIFEST_CACHE));
+            if (parsed == null) {
+                contributors = List.of();
+                availableFiles = Set.of();
+                everCached = false;
+                return;
+            }
             contributors = parsed;
             availableFiles = computeAvailable(parsed);
             everCached = true;
@@ -125,6 +133,9 @@ public final class RemoteBanners {
             }
 
             List<RemoteContributor> newContributors = parseManifest(result.body());
+            if (newContributors == null) {
+                return;
+            }
             downloadMissingOrChanged(client, result.baseUrl(), newContributors, previousVersions);
 
             writeAtomic(MANIFEST_CACHE, result.body());
@@ -202,8 +213,39 @@ public final class RemoteBanners {
 
     private static List<RemoteContributor> parseManifest(byte[] bytes) {
         String json = new String(bytes, StandardCharsets.UTF_8);
-        RemoteContributor[] parsed = GSON.fromJson(json, RemoteContributor[].class);
-        return parsed != null ? List.of(parsed) : List.of();
+        RemoteContributor[] parsed;
+        try {
+            parsed = GSON.fromJson(json, RemoteContributor[].class);
+        } catch (JsonSyntaxException e) {
+            createaddonorganizer.LOGGER.warn("[CAO] remote banner manifest is not valid JSON; ignoring it", e);
+            return null;
+        }
+        if (parsed == null) {
+            return List.of();
+        }
+        List<RemoteContributor> sanitized = new ArrayList<>(parsed.length);
+        for (RemoteContributor contributor : parsed) {
+            if (contributor == null || contributor.name() == null || contributor.banners() == null) {
+                createaddonorganizer.LOGGER.warn("[CAO] skipping malformed contributor entry in banner manifest: {}", contributor);
+                continue;
+            }
+            List<RemoteBannerFile> files = new ArrayList<>(contributor.banners().size());
+            for (RemoteBannerFile file : contributor.banners()) {
+                if (file == null || file.file() == null || !isSafeFilename(file.file())) {
+                    createaddonorganizer.LOGGER.warn("[CAO] skipping malformed banner entry {} for contributor \"{}\"",
+                            file, contributor.name());
+                    continue;
+                }
+                files.add(file);
+            }
+            sanitized.add(files.size() == contributor.banners().size() ? contributor
+                    : new RemoteContributor(contributor.name(), contributor.color(), files));
+        }
+        return List.copyOf(sanitized);
+    }
+
+    private static boolean isSafeFilename(String name) {
+        return name.matches("[A-Za-z0-9._-]+\\.png");
     }
 
     private static Set<String> computeAvailable(List<RemoteContributor> manifestContributors) {

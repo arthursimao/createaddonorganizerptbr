@@ -1,8 +1,8 @@
-### Why no artworks?
-There are currently no artwork banners for any mod because..... i suck at pixel art.
-**BUT**, if you want to contribute art for a mod, visit the [Discord](https://discord.gg/gfVqfFQ3KB) and upload your banner artwork in the channel! if it gets added to the mod, you will be added to the credits! thanks :)
+### Why arent artworks for everything?
+Most create mod addons already have an banner but not every one of them because..... i suck at pixel art/image editing.
+**BUT**, if you want to contribute art for a mod, visit the [Discord](https://discord.gg/BzgNNpW5Nz) and upload your banner artwork in the channel! if it gets added to the mod, you will be added to the credits! thanks :)
 
-![this is an actual banner from the mod!](https://cdn.modrinth.com/data/cached_images/8f314bb39409d3177ac81e43817c4d856b178b81_0.webp)
+![!](image.png)
 
 Have you ever been in creative mode with a ton of create mod addons and found it annoying that EVERY SINGLE ONE has its own tab? well, **Worry no more!** CAO sorts every create addon into sections contained within the base "Create" tab, and the "Create's Building Blocks" tab. it also leaves create aeronautics untouched.
 

@@ -4,7 +4,12 @@ Most create mod addons already have an banner but not every one of them because.
 
 ![!](image.png)
 
-Have you ever been in creative mode with a ton of create mod addons and found it annoying that EVERY SINGLE ONE has its own tab? well, **Worry no more!** CAO sorts every create addon into sections contained within the base "Create" tab, and the "Create's Building Blocks" tab. it also leaves create aeronautics untouched.
+Have you ever been in Creative mode with a ton of Create mod add-ons and found it annoying that every single one has its own tab? Well, **worry no more!**
+
+CAO organizes all Create add-ons into sections within the base "Create" tab and the "Create's Building Blocks" tab.
+
+It also includes compatibility with Create Aeronautics, meaning you can add mods to it. However, since Create Aeronautics uses a different system for adding sections, the original Aeronautics sections cannot be modified.
+
 
 
 <details>
